@@ -6,6 +6,7 @@ const {
     accessTokenSecret,
     refreshTokenSecret,
 } = require('../configurations/env.config')
+const { ERROR_CODES } = require('../constants/error.constant')
 
 const parseCookies = (cookieString) => {
     return cookieString.split(';').reduce((cookies, cookie) => {
@@ -24,6 +25,7 @@ const getCookiesFromHeader = (request, response) => {
             .send(
                 setResponseBody(
                     'Authentication token missing',
+                    ERROR_CODES.AUTH_TOKEN_MISSING,
                     'authentication_error',
                     null,
                 ),
@@ -43,6 +45,7 @@ const verifyUser = async (request, response, next) => {
                 .send(
                     setResponseBody(
                         'Access token missing',
+                        ERROR_CODES.AUTH_TOKEN_MISSING,
                         'authentication_error',
                         null,
                     ),
@@ -55,11 +58,25 @@ const verifyUser = async (request, response, next) => {
         try {
             decoded = jwt.verify(accessToken, accessTokenSecret)
         } catch (error) {
+            if (error.name === 'TokenExpiredError') {
+                return response
+                    .status(401)
+                    .send(
+                        setResponseBody(
+                            'Access token expired',
+                            ERROR_CODES.ACCESS_TOKEN_EXPIRED,
+                            'token_expired',
+                            null,
+                        ),
+                    )
+            }
+
             return response
-                .status(440)
+                .status(401)
                 .send(
                     setResponseBody(
                         'Session expired',
+                        ERROR_CODES.ACCESS_TOKEN_INVALID,
                         'authentication_error',
                         null,
                     ),
@@ -73,10 +90,11 @@ const verifyUser = async (request, response, next) => {
 
         if (!existingUser) {
             return response
-                .status(401)
+                .status(404)
                 .send(
                     setResponseBody(
                         'User not found',
+                        ERROR_CODES.USER_NOT_FOUND,
                         'authentication_error',
                         null,
                     ),
@@ -88,7 +106,14 @@ const verifyUser = async (request, response, next) => {
     } catch (error) {
         return response
             .status(500)
-            .send(setResponseBody(error.message, 'server_error', null))
+            .send(
+                setResponseBody(
+                    error.message,
+                    ERROR_CODES.SERVER_ERROR,
+                    'server_error',
+                    null
+                )
+            )
     }
 }
 
@@ -100,6 +125,7 @@ const allowRoles = (...allowedRoles) => {
                 .send(
                     setResponseBody(
                         'Unauthorized',
+                        ERROR_CODES.AUTH_TOKEN_MISSING,
                         'authentication_error',
                         null,
                     ),
@@ -112,6 +138,7 @@ const allowRoles = (...allowedRoles) => {
                 .send(
                     setResponseBody(
                         'Forbidden - insufficient permission',
+                        ERROR_CODES.INSUFFICIENT_PERMISSIONS,
                         'authorization_error',
                         null,
                     ),
@@ -132,7 +159,8 @@ const getRefreshToken = async (request, response, next) => {
                 .status(401)
                 .send(
                     setResponseBody(
-                        'Access token missing',
+                        'Refresh token missing',
+                        ERROR_CODES.REFRESH_TOKEN_MISSING,
                         'authentication_error',
                         null,
                     ),
@@ -143,12 +171,26 @@ const getRefreshToken = async (request, response, next) => {
     try {
         decode = jwt.verify(refreshToken, refreshTokenSecret)
     } catch (error) {
-        return response
-            .status(440)
+        if (error.name === 'TokenExpiredError') {
+            return response
+                .status(401)
+                .send(
+                    setResponseBody(
+                        'Refresh token expired',
+                        ERROR_CODES.REFRESH_TOKEN_EXPIRED,
+                        'refresh_token_expired',
+                        null,
+                    ),
+                )
+        }
+
+        response
+            .status(401)
             .send(
                 setResponseBody(
-                    'Refresh token expired',
-                    'authentication_error',
+                    'Invalid refresh token',
+                    ERROR_CODES.REFRESH_TOKEN_INVALID,
+                    'invalid_refresh_token',
                     null,
                 ),
             )
@@ -167,6 +209,7 @@ const getRefreshToken = async (request, response, next) => {
             .send(
                 setResponseBody(
                     'Invalid refresh token',
+                    ERROR_CODES.REFRESH_TOKEN_INVALID,
                     'authentication_error',
                     null,
                 ),
@@ -178,9 +221,14 @@ const getRefreshToken = async (request, response, next) => {
 
     if (!existingUser) {
         return response
-            .status(401)
+            .status(404)
             .send(
-                setResponseBody('User not found', 'authentication_error', null),
+                setResponseBody(
+                    'User not found',
+                    ERROR_CODES.USER_NOT_FOUND,
+                    'authentication_error',
+                    null
+                ),
             )
     }
     const role = existingUser.role
