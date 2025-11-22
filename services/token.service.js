@@ -12,7 +12,11 @@ const generateAndSetTokens = async (response, tenantId, userId, role) => {
         userId,
         role,
     )
-    const refreshToken = await generateAndSetRefreshToken(response, userId)
+    const refreshToken = await generateAndSetRefreshToken(
+        response,
+        userId,
+        tenantId,
+    )
 
     await storeRefreshToken(tenantId, { userId, refreshToken })
 }
@@ -24,14 +28,15 @@ const generateAndSetAccessToken = async (response, tenantId, userId, role) => {
         role,
     })
 
-    setTokenCookie(response, 'AcceessToken', accessToken)
+    setTokenCookie(response, 'AccessToken', accessToken)
 
     return accessToken
 }
 
-const generateAndSetRefreshToken = async (response, userId) => {
+const generateAndSetRefreshToken = async (response, userId, tenantId) => {
     const refreshToken = generateRefreshToken({
         userId,
+        tenantId,
     })
 
     setTokenCookie(response, 'RefreshToken', refreshToken)

@@ -7,9 +7,9 @@ const {
 const { generateAndSetTokens } = require('../services/token.service')
 const { setResponseBody } = require('../utils/responseFormatter.util')
 const bcrypt = require('bcryptjs')
+const { getRefreshToken } = require('../middlewares/auth.middleware')
 
 const signup = async (request, response) => {
-    console.log('entered controller')
     const { firstName, lastName, email, password, role } = request.body
 
     const tenantId = 'abcd'
@@ -89,8 +89,6 @@ const login = async (request, response) => {
                 )
         }
 
-        console.log(email)
-
         const tenantId = await getTenantIdByEmail(email)
         if (tenantId == null) {
             return response
@@ -116,8 +114,6 @@ const login = async (request, response) => {
                     ),
                 )
         }
-
-        console.log(existingUser)
 
         const validPassword = await bcrypt.compare(
             password,
@@ -157,7 +153,30 @@ const login = async (request, response) => {
     }
 }
 
+const refreshAccessToken = async (request, response) => {
+    const { tenantId, userId, role } = request.user
+    try {
+        await generateAndSetTokens(response, tenantId, userId, role)
+
+        return response
+            .status(200)
+            .send(
+                setResponseBody(
+                    'Access token refreshed successfully',
+                    null,
+                    null,
+                ),
+            )
+    } catch (error) {
+        console.log(error)
+        return response
+            .status(500)
+            .send(setResponseBody(error.message, 'server_error', null))
+    }
+}
+
 module.exports = {
     signup,
     login,
+    refreshAccessToken,
 }

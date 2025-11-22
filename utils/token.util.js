@@ -21,8 +21,8 @@ const generateAccessToken = ({ tenantId, userId, role }) => {
     })
 }
 
-const generateRefreshToken = ({ userId }) => {
-    return jwt.sign({ userId }, refreshTokenSecret, {
+const generateRefreshToken = ({ userId, tenantId }) => {
+    return jwt.sign({ userId, tenantId }, refreshTokenSecret, {
         expiresIn: REFRESH_TOKEN_TTL,
     })
 }
