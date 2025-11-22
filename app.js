@@ -6,6 +6,7 @@ const cors = require('cors')
 const cookieParser = require('cookie-parser')
 
 const authRoute = require('./routes/auth.route')
+const dashboardRoute = require('./routes/dashboard.route')
 
 app.use(
     cors({
@@ -22,5 +23,6 @@ app.get('/', (request, response) => {
 })
 
 app.use('/api/v1/auth', authRoute)
+app.use('/api/v1/dashboard', dashboardRoute)
 
 module.exports = app
