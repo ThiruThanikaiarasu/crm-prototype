@@ -92,7 +92,7 @@ const login = async (request, response) => {
         console.log(email)
 
         const tenantId = await getTenantIdByEmail(email)
-        if (tenantId != null) {
+        if (tenantId == null) {
             return response
                 .status(404)
                 .send(
