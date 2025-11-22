@@ -1,37 +1,44 @@
-const { generateAccessToken, generateRefreshToken, setTokenCookie } = require("../utils/token.util");
-const { storeRefreshToken } = require("./refreshToken.service");
+const {
+    generateAccessToken,
+    generateRefreshToken,
+    setTokenCookie,
+} = require('../utils/token.util')
+const { storeRefreshToken } = require('./refreshToken.service')
 
 const generateAndSetTokens = async (response, tenantId, userId, role) => {
-
-    const accessToken = await generateAndSetAccessToken(response, tenantId, userId, role)
+    const accessToken = await generateAndSetAccessToken(
+        response,
+        tenantId,
+        userId,
+        role,
+    )
     const refreshToken = await generateAndSetRefreshToken(response, userId)
 
-    await storeRefreshToken(tenantId, { userId, refreshToken})
+    await storeRefreshToken(tenantId, { userId, refreshToken })
 }
 
 const generateAndSetAccessToken = async (response, tenantId, userId, role) => {
     const accessToken = generateAccessToken({
         tenantId,
         userId,
-        role
-    });
+        role,
+    })
 
-    setTokenCookie(response, "AcceessToken", accessToken)
+    setTokenCookie(response, 'AcceessToken', accessToken)
 
     return accessToken
 }
 
 const generateAndSetRefreshToken = async (response, userId) => {
     const refreshToken = generateRefreshToken({
-            userId
+        userId,
     })
 
-
-    setTokenCookie(response, "RefreshToken", refreshToken)
+    setTokenCookie(response, 'RefreshToken', refreshToken)
 
     return refreshToken
 }
 
 module.exports = {
-    generateAndSetTokens
+    generateAndSetTokens,
 }

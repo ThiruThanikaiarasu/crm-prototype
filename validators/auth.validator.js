@@ -1,18 +1,20 @@
-const { validateFirstName, validateLastName, validateEmail, validatePassword } = require("./commonAuth.validator")
+const {
+    validateFirstName,
+    validateLastName,
+    validateEmail,
+    validatePassword,
+} = require('./commonAuth.validator')
 
 const validateSignupPayload = [
     validateFirstName(),
     validateLastName(),
     validateEmail(),
-    validatePassword()
+    validatePassword(),
 ]
 
-const validateLoginPayload = [
-    validateEmail(),
-    validatePassword()
-]
+const validateLoginPayload = [validateEmail(), validatePassword()]
 
 module.exports = {
     validateSignupPayload,
-    validateLoginPayload
+    validateLoginPayload,
 }

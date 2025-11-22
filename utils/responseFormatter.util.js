@@ -7,5 +7,5 @@ const setResponseBody = (message, error, data) => {
 }
 
 module.exports = {
-    setResponseBody
+    setResponseBody,
 }

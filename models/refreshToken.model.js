@@ -1,7 +1,7 @@
-const mongoose = require('mongoose');
-const ms = require('ms');
+const mongoose = require('mongoose')
+const ms = require('ms')
 
-const refreshTokenTTL = process.env.REFRESH_TOKEN_TTL || "90d";
+const refreshTokenTTL = process.env.REFRESH_TOKEN_TTL || '90d'
 
 const createRefreshTokenSchema = (tenantId) => {
     return new mongoose.Schema(
@@ -9,47 +9,47 @@ const createRefreshTokenSchema = (tenantId) => {
             user: {
                 type: mongoose.Schema.Types.ObjectId,
                 ref: `${tenantId}_users`,
-                required: [true, "User is a mandatory field"]
+                required: [true, 'User is a mandatory field'],
             },
             token: {
                 type: String,
-                required: [true, "Refresh token is a mandatory field"]
+                required: [true, 'Refresh token is a mandatory field'],
             },
             deviceInfo: {
                 ip: String,
                 device: String,
                 os: String,
-                location: String
+                location: String,
             },
             isRevoked: {
                 type: Boolean,
-                default: false
+                default: false,
             },
             expiresAt: {
                 type: Date,
-                default: () => new Date(Date.now() + ms(refreshTokenTTL))
+                default: () => new Date(Date.now() + ms(refreshTokenTTL)),
             },
-            replacedByToken: String
+            replacedByToken: String,
         },
         {
-            timestamps: true
-        }
-    );
-};
+            timestamps: true,
+        },
+    )
+}
 
 const refreshTokenModel = (tenantId) => {
     if (!tenantId) {
-        throw new Error("Tenant id must be provided");
+        throw new Error('Tenant id must be provided')
     }
 
-    const collectionName = `${tenantId}_refreshTokens`;
+    const collectionName = `${tenantId}_refreshTokens`
 
     if (mongoose.models[collectionName]) {
-        return mongoose.models[collectionName];
+        return mongoose.models[collectionName]
     }
 
-    const schema = createRefreshTokenSchema(tenantId);
-    return mongoose.model(collectionName, schema);
-};
+    const schema = createRefreshTokenSchema(tenantId)
+    return mongoose.model(collectionName, schema)
+}
 
-module.exports = refreshTokenModel;
+module.exports = refreshTokenModel

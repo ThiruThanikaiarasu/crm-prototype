@@ -1,13 +1,13 @@
-const refreshTokenModel = require("../models/refreshToken.model");
+const refreshTokenModel = require('../models/refreshToken.model')
 
 const storeRefreshToken = async (tenantId, data) => {
-    const RefreshToken = refreshTokenModel(tenantId);
+    const RefreshToken = refreshTokenModel(tenantId)
     return await RefreshToken.create({
         user: data.userId,
-        token: data.refreshToken
-    });
-};
+        token: data.refreshToken,
+    })
+}
 
 module.exports = {
-    storeRefreshToken
-};
+    storeRefreshToken,
+}
