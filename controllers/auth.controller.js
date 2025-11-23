@@ -4,10 +4,11 @@ const {
     registerUser,
     getTenantIdByEmail,
 } = require('../services/auth.service')
-const { generateAndSetTokens } = require('../services/token.service')
+const { generateAndSetTokens, clearAuthCookies } = require('../services/token.service')
 const { setResponseBody } = require('../utils/responseFormatter.util')
 const bcrypt = require('bcryptjs')
 const { ERROR_CODES } = require('../constants/error.constant')
+const { getCookiesFromHeader } = require('../middlewares/auth.middleware')
 
 const signup = async (request, response) => {
     const { firstName, lastName, email, password, role } = request.body
@@ -60,12 +61,17 @@ const signup = async (request, response) => {
         )
 
         return response.status(201).send(
-            setResponseBody('User registered successfully', null, {
-                firstName: createdUser.firstName,
-                lastName: createdUser.lastName,
-                email: createdUser.email,
-                role: createdUser.role,
-            }),
+            setResponseBody(
+                'User registered successfully',
+                ERROR_CODES.USER_REGISTERED,
+                null,
+                {
+                    firstName: createdUser.firstName,
+                    lastName: createdUser.lastName,
+                    email: createdUser.email,
+                    role: createdUser.role,
+                }
+            ),
         )
     } catch (error) {
         response
@@ -92,6 +98,7 @@ const login = async (request, response) => {
                 .send(
                     setResponseBody(
                         errors.array()[0].msg,
+                        ERROR_CODES.VALIDATION_ERROR,
                         'validation_error',
                         null,
                     ),
@@ -105,6 +112,7 @@ const login = async (request, response) => {
                 .send(
                     setResponseBody(
                         'Your organization is not registered',
+                        ERROR_CODES.ORGANIZATION_NOT_FOUND,
                         'organization_not_found',
                         null,
                     ),
@@ -118,6 +126,7 @@ const login = async (request, response) => {
                 .send(
                     setResponseBody(
                         'Invalid email address',
+                        ERROR_CODES.INVALID_CREDENTIALS,
                         'invalid_email',
                         null,
                     ),
@@ -134,6 +143,7 @@ const login = async (request, response) => {
                 .send(
                     setResponseBody(
                         'Invalid password',
+                        ERROR_CODES.INVALID_CREDENTIALS,
                         'invalid_password',
                         null,
                     ),
@@ -148,17 +158,29 @@ const login = async (request, response) => {
         )
 
         return response.status(200).send(
-            setResponseBody('Logged in Successfully', null, {
-                firstName: existingUser.firstName,
-                lastName: existingUser.lastName,
-                email: existingUser.email,
-                role: existingUser.role,
-            }),
+            setResponseBody(
+                'Logged in Successfully',
+                null,
+                ERROR_CODES.LOGIN_SUCCESS,
+                {
+                    firstName: existingUser.firstName,
+                    lastName: existingUser.lastName,
+                    email: existingUser.email,
+                    role: existingUser.role,
+                }
+            ),
         )
     } catch (error) {
         response
             .status(500)
-            .send(setResponseBody(error.message, 'server_error', null))
+            .send(
+                setResponseBody(
+                    error.message,
+                    ERROR_CODES.SERVER_ERROR,
+                    'server_error',
+                    null
+                )
+            )
     }
 }
 
@@ -172,15 +194,65 @@ const refreshAccessToken = async (request, response) => {
             .send(
                 setResponseBody(
                     'Access token refreshed successfully',
+                    ERROR_CODES.TOKEN_REFRESHED,
                     null,
                     null,
                 ),
             )
     } catch (error) {
-        console.log(error)
-        return response
+        response
             .status(500)
-            .send(setResponseBody(error.message, 'server_error', null))
+            .send(
+                setResponseBody(
+                    error.message,
+                    ERROR_CODES.SERVER_ERROR,
+                    'server_error',
+                    null
+                )
+            )
+    }
+}
+
+const logout = async (request, response) => {
+    try {
+        const cookies = getCookiesFromHeader(request, response)
+
+        if (!cookies) {
+            return response
+                    .status(401)
+                    .send(
+                        setResponseBody(
+                            'Access token missing',
+                            ERROR_CODES.AUTH_TOKEN_MISSING,
+                            'authentication_error',
+                            null,
+                        )
+                    )
+        }
+
+        clearAuthCookies(response)
+
+        return response
+            .status(200)
+            .send(
+                setResponseBody(
+                    'Logged out successfully',
+                    ERROR_CODES.LOGOUT_SUCCESS,
+                    null,
+                    null,
+                ),
+            )
+    } catch (error) {
+        response
+            .status(500)
+            .send(
+                setResponseBody(
+                    error.message,
+                    ERROR_CODES.SERVER_ERROR,
+                    'server_error',
+                    null
+                )
+            )
     }
 }
 
@@ -188,4 +260,5 @@ module.exports = {
     signup,
     login,
     refreshAccessToken,
+    logout
 }

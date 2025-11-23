@@ -42,6 +42,7 @@ const ERROR_CODES = {
     USER_REGISTERED: "0001",
     LOGIN_SUCCESS: "0002",
     TOKEN_REFRESHED: "0003",
+    LOGOUT_SUCCESS: "0004"
 }
 
 module.exports = {

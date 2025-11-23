@@ -245,4 +245,5 @@ module.exports = {
     allowRoles,
     verifyUser,
     getRefreshToken,
+    getCookiesFromHeader
 }

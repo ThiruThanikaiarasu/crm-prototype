@@ -5,6 +5,7 @@ const {
     signup,
     login,
     refreshAccessToken,
+    logout,
 } = require('../controllers/auth.controller')
 const {
     validateSignupPayload,
@@ -37,6 +38,12 @@ router.post(
     getRefreshToken,
 
     refreshAccessToken,
+)
+
+router.post(
+    '/logout',
+
+    logout
 )
 
 module.exports = router

@@ -44,6 +44,21 @@ const generateAndSetRefreshToken = async (response, userId, tenantId) => {
     return refreshToken
 }
 
+const clearAuthCookies = (response) => {
+    clearTokenCookie(response, 'AccessToken')
+    clearTokenCookie(response, 'RefreshToken')
+}
+
+const clearTokenCookie = (response, cookieName) => {
+    response.clearCookie(cookieName, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'None',
+        path: '/'
+    })
+}
+
 module.exports = {
     generateAndSetTokens,
+    clearAuthCookies
 }
