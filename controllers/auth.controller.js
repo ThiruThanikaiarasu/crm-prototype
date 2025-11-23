@@ -128,8 +128,8 @@ const login = async (request, response) => {
                 .status(404)
                 .send(
                     setResponseBody(
-                        'Invalid email address',
-                        ERROR_CODES.INVALID_CREDENTIALS,
+                        'Email not yet registered, please try Register',
+                        ERROR_CODES.USER_NOT_FOUND,
                         'invalid_email',
                         null,
                     ),
@@ -145,7 +145,7 @@ const login = async (request, response) => {
                 .status(401)
                 .send(
                     setResponseBody(
-                        'Invalid password',
+                        'Invalid Credentials',
                         ERROR_CODES.INVALID_CREDENTIALS,
                         'invalid_password',
                         null,
@@ -225,7 +225,7 @@ const logout = async (request, response) => {
                 .status(401)
                 .send(
                     setResponseBody(
-                        'Access token missing',
+                        'Session Expired Already',
                         ERROR_CODES.AUTH_TOKEN_MISSING,
                         'authentication_error',
                         null,

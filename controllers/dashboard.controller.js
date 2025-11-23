@@ -3,7 +3,7 @@ const { setResponseBody } = require('../utils/responseFormatter.util')
 
 const getDashboardContent = async (request, response) => {
     try {
-        return response.status(201).send(
+        return response.status(200).send(
             setResponseBody(
                 'Data fetched Successfully',
                 ERROR_CODES.SUCCESS,
@@ -36,7 +36,7 @@ const getDashboardContent = async (request, response) => {
 
 const getAdminDashboard = async (request, response) => {
     try {
-        return response.status(201).send(
+        return response.status(200).send(
             setResponseBody(
                 'Data fetched Successfully',
                 ERROR_CODES.SUCCESS,
@@ -73,7 +73,7 @@ const getAdminDashboard = async (request, response) => {
 
 const getSuperAdminDashboard = async (request, response) => {
     try {
-        return response.status(201).send(
+        return response.status(200).send(
             setResponseBody(
                 'Data fetched Successfully',
                 ERROR_CODES.SUCCESS,

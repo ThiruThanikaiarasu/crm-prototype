@@ -24,7 +24,7 @@ const getCookiesFromHeader = (request, response) => {
             .status(401)
             .send(
                 setResponseBody(
-                    'Authentication token missing',
+                    'Session Expired',
                     ERROR_CODES.AUTH_TOKEN_MISSING,
                     'authentication_error',
                     null,
@@ -44,7 +44,7 @@ const verifyUser = async (request, response, next) => {
                 .status(401)
                 .send(
                     setResponseBody(
-                        'Access token missing',
+                        'Session Expired',
                         ERROR_CODES.AUTH_TOKEN_MISSING,
                         'authentication_error',
                         null,
@@ -63,7 +63,7 @@ const verifyUser = async (request, response, next) => {
                     .status(401)
                     .send(
                         setResponseBody(
-                            'Access token expired',
+                            'Session Expired',
                             ERROR_CODES.ACCESS_TOKEN_EXPIRED,
                             'token_expired',
                             null,
@@ -75,7 +75,7 @@ const verifyUser = async (request, response, next) => {
                 .status(401)
                 .send(
                     setResponseBody(
-                        'Session expired',
+                        'Session Expired',
                         ERROR_CODES.ACCESS_TOKEN_INVALID,
                         'authentication_error',
                         null,
@@ -125,7 +125,7 @@ const allowRoles = (...allowedRoles) => {
                 .status(401)
                 .send(
                     setResponseBody(
-                        'Unauthorized',
+                        'Session Expired',
                         ERROR_CODES.AUTH_TOKEN_MISSING,
                         'authentication_error',
                         null,
@@ -138,7 +138,7 @@ const allowRoles = (...allowedRoles) => {
                 .status(403)
                 .send(
                     setResponseBody(
-                        'Forbidden - insufficient permission',
+                        "You don’t have access to this resource",
                         ERROR_CODES.INSUFFICIENT_PERMISSIONS,
                         'authorization_error',
                         null,
@@ -160,7 +160,7 @@ const getRefreshToken = async (request, response, next) => {
             .status(401)
             .send(
                 setResponseBody(
-                    'Refresh token missing',
+                    'Session Expired',
                     ERROR_CODES.REFRESH_TOKEN_MISSING,
                     'authentication_error',
                     null,
@@ -177,7 +177,7 @@ const getRefreshToken = async (request, response, next) => {
                 .status(401)
                 .send(
                     setResponseBody(
-                        'Refresh token expired',
+                        'Session Expired',
                         ERROR_CODES.REFRESH_TOKEN_EXPIRED,
                         'refresh_token_expired',
                         null,
@@ -189,7 +189,7 @@ const getRefreshToken = async (request, response, next) => {
             .status(401)
             .send(
                 setResponseBody(
-                    'Invalid refresh token',
+                    'Session Expired',
                     ERROR_CODES.REFRESH_TOKEN_INVALID,
                     'invalid_refresh_token',
                     null,
@@ -206,10 +206,10 @@ const getRefreshToken = async (request, response, next) => {
 
     if (!refreshFromDb) {
         return response
-            .status(403)
+            .status(401)
             .send(
                 setResponseBody(
-                    'Invalid refresh token',
+                    'Session Expired',
                     ERROR_CODES.REFRESH_TOKEN_INVALID,
                     'authentication_error',
                     null,
