@@ -4,7 +4,10 @@ const {
     registerUser,
     getTenantIdByEmail,
 } = require('../services/auth.service')
-const { generateAndSetTokens, clearAuthCookies } = require('../services/token.service')
+const {
+    generateAndSetTokens,
+    clearAuthCookies,
+} = require('../services/token.service')
 const { setResponseBody } = require('../utils/responseFormatter.util')
 const bcrypt = require('bcryptjs')
 const { ERROR_CODES } = require('../constants/error.constant')
@@ -70,7 +73,7 @@ const signup = async (request, response) => {
                     lastName: createdUser.lastName,
                     email: createdUser.email,
                     role: createdUser.role,
-                }
+                },
             ),
         )
     } catch (error) {
@@ -81,8 +84,8 @@ const signup = async (request, response) => {
                     error.message,
                     ERROR_CODES.SERVER_ERROR,
                     'server_error',
-                    null
-                )
+                    null,
+                ),
             )
     }
 }
@@ -167,7 +170,7 @@ const login = async (request, response) => {
                     lastName: existingUser.lastName,
                     email: existingUser.email,
                     role: existingUser.role,
-                }
+                },
             ),
         )
     } catch (error) {
@@ -178,8 +181,8 @@ const login = async (request, response) => {
                     error.message,
                     ERROR_CODES.SERVER_ERROR,
                     'server_error',
-                    null
-                )
+                    null,
+                ),
             )
     }
 }
@@ -207,8 +210,8 @@ const refreshAccessToken = async (request, response) => {
                     error.message,
                     ERROR_CODES.SERVER_ERROR,
                     'server_error',
-                    null
-                )
+                    null,
+                ),
             )
     }
 }
@@ -219,15 +222,15 @@ const logout = async (request, response) => {
 
         if (!cookies) {
             return response
-                    .status(401)
-                    .send(
-                        setResponseBody(
-                            'Access token missing',
-                            ERROR_CODES.AUTH_TOKEN_MISSING,
-                            'authentication_error',
-                            null,
-                        )
-                    )
+                .status(401)
+                .send(
+                    setResponseBody(
+                        'Access token missing',
+                        ERROR_CODES.AUTH_TOKEN_MISSING,
+                        'authentication_error',
+                        null,
+                    ),
+                )
         }
 
         clearAuthCookies(response)
@@ -250,8 +253,8 @@ const logout = async (request, response) => {
                     error.message,
                     ERROR_CODES.SERVER_ERROR,
                     'server_error',
-                    null
-                )
+                    null,
+                ),
             )
     }
 }
@@ -260,5 +263,5 @@ module.exports = {
     signup,
     login,
     refreshAccessToken,
-    logout
+    logout,
 }

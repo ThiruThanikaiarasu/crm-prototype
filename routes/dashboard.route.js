@@ -1,5 +1,9 @@
 const express = require('express')
-const { getDashboardContent, getAdminDashboard, getSuperAdminDashboard } = require('../controllers/dashboard.controller')
+const {
+    getDashboardContent,
+    getAdminDashboard,
+    getSuperAdminDashboard,
+} = require('../controllers/dashboard.controller')
 const { verifyUser, allowRoles } = require('../middlewares/auth.middleware')
 const ROLES = require('../constants/role.constant')
 const router = express.Router()
@@ -10,7 +14,7 @@ router.get(
     verifyUser,
     allowRoles(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.EMPLOYEE),
 
-    getDashboardContent
+    getDashboardContent,
 )
 
 router.get(
@@ -19,7 +23,7 @@ router.get(
     verifyUser,
     allowRoles(ROLES.SUPER_ADMIN, ROLES.ADMIN),
 
-    getAdminDashboard
+    getAdminDashboard,
 )
 
 router.get(
@@ -28,7 +32,7 @@ router.get(
     verifyUser,
     allowRoles(ROLES.SUPER_ADMIN),
 
-    getSuperAdminDashboard
+    getSuperAdminDashboard,
 )
 
 module.exports = router

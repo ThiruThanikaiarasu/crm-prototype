@@ -1,20 +1,24 @@
-const { ERROR_CODES } = require("../constants/error.constant")
-const { setResponseBody } = require("../utils/responseFormatter.util")
+const { ERROR_CODES } = require('../constants/error.constant')
+const { setResponseBody } = require('../utils/responseFormatter.util')
 
 const getDashboardContent = async (request, response) => {
     try {
         return response.status(201).send(
-                    setResponseBody(
-                        'Data fetched Successfully',
-                        ERROR_CODES.SUCCESS,
-                        null,
+            setResponseBody(
+                'Data fetched Successfully',
+                ERROR_CODES.SUCCESS,
+                null,
+                {
+                    cards: [
                         {
-                            cards: [
-                                { title: "Card 1", description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit." },
-                            ]
-                        }
-                    ),
-                )
+                            title: 'Card 1',
+                            description:
+                                'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+                        },
+                    ],
+                },
+            ),
+        )
     } catch (error) {
         console.log(error)
         response
@@ -24,8 +28,8 @@ const getDashboardContent = async (request, response) => {
                     error.message,
                     ERROR_CODES.SERVER_ERROR,
                     'server_error',
-                    null
-                )
+                    null,
+                ),
             )
     }
 }
@@ -33,18 +37,26 @@ const getDashboardContent = async (request, response) => {
 const getAdminDashboard = async (request, response) => {
     try {
         return response.status(201).send(
-                    setResponseBody(
-                        'Data fetched Successfully',
-                        ERROR_CODES.SUCCESS,
-                        null,
+            setResponseBody(
+                'Data fetched Successfully',
+                ERROR_CODES.SUCCESS,
+                null,
+                {
+                    cards: [
                         {
-                            cards: [
-                                { title: "Card 1", description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit." },
-                                { title: "Card 2", description: "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua." },
-                            ]
-                        }
-                    ),
-                )
+                            title: 'Card 1',
+                            description:
+                                'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+                        },
+                        {
+                            title: 'Card 2',
+                            description:
+                                'Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
+                        },
+                    ],
+                },
+            ),
+        )
     } catch (error) {
         response
             .status(500)
@@ -53,8 +65,8 @@ const getAdminDashboard = async (request, response) => {
                     error.message,
                     ERROR_CODES.SERVER_ERROR,
                     'server_error',
-                    null
-                )
+                    null,
+                ),
             )
     }
 }
@@ -62,19 +74,31 @@ const getAdminDashboard = async (request, response) => {
 const getSuperAdminDashboard = async (request, response) => {
     try {
         return response.status(201).send(
-                    setResponseBody(
-                        'Data fetched Successfully',
-                        ERROR_CODES.SUCCESS,
-                        null,
+            setResponseBody(
+                'Data fetched Successfully',
+                ERROR_CODES.SUCCESS,
+                null,
+                {
+                    cards: [
                         {
-                            cards: [
-                                { title: "Card 1", description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit." },
-                                { title: "Card 2", description: "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua." },
-                                { title: "Card 3", description: "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris." }
-                            ]
-                        }
-                    ),
-                )
+                            title: 'Card 1',
+                            description:
+                                'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+                        },
+                        {
+                            title: 'Card 2',
+                            description:
+                                'Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
+                        },
+                        {
+                            title: 'Card 3',
+                            description:
+                                'Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.',
+                        },
+                    ],
+                },
+            ),
+        )
     } catch (error) {
         response
             .status(500)
@@ -83,8 +107,8 @@ const getSuperAdminDashboard = async (request, response) => {
                     error.message,
                     ERROR_CODES.SERVER_ERROR,
                     'server_error',
-                    null
-                )
+                    null,
+                ),
             )
     }
 }
@@ -92,5 +116,5 @@ const getSuperAdminDashboard = async (request, response) => {
 module.exports = {
     getDashboardContent,
     getAdminDashboard,
-    getSuperAdminDashboard
+    getSuperAdminDashboard,
 }

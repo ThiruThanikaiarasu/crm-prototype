@@ -112,8 +112,8 @@ const verifyUser = async (request, response, next) => {
                     error.message,
                     ERROR_CODES.SERVER_ERROR,
                     'server_error',
-                    null
-                )
+                    null,
+                ),
             )
     }
 }
@@ -157,15 +157,15 @@ const getRefreshToken = async (request, response, next) => {
 
     if (!refreshToken) {
         return response
-                .status(401)
-                .send(
-                    setResponseBody(
-                        'Refresh token missing',
-                        ERROR_CODES.REFRESH_TOKEN_MISSING,
-                        'authentication_error',
-                        null,
-                    ),
-                )
+            .status(401)
+            .send(
+                setResponseBody(
+                    'Refresh token missing',
+                    ERROR_CODES.REFRESH_TOKEN_MISSING,
+                    'authentication_error',
+                    null,
+                ),
+            )
     }
 
     let decode
@@ -228,7 +228,7 @@ const getRefreshToken = async (request, response, next) => {
                     'User not found',
                     ERROR_CODES.USER_NOT_FOUND,
                     'authentication_error',
-                    null
+                    null,
                 ),
             )
     }
@@ -245,5 +245,5 @@ module.exports = {
     allowRoles,
     verifyUser,
     getRefreshToken,
-    getCookiesFromHeader
+    getCookiesFromHeader,
 }

@@ -43,7 +43,7 @@ router.post(
 router.post(
     '/logout',
 
-    logout
+    logout,
 )
 
 module.exports = router

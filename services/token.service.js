@@ -54,11 +54,11 @@ const clearTokenCookie = (response, cookieName) => {
         httpOnly: true,
         secure: true,
         sameSite: 'None',
-        path: '/'
+        path: '/',
     })
 }
 
 module.exports = {
     generateAndSetTokens,
-    clearAuthCookies
+    clearAuthCookies,
 }

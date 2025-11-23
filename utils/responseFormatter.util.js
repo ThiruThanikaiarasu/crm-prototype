@@ -1,4 +1,4 @@
-const setResponseBody = (message,errorCode = "0000", error, data) => {
+const setResponseBody = (message, errorCode = '0000', error, data) => {
     return {
         message,
         errorCode,
