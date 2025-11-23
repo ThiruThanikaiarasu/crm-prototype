@@ -37,7 +37,7 @@ const getCookiesFromHeader = (request, response) => {
 
 const verifyUser = async (request, response, next) => {
     try {
-        const cookies = getCookiesFromHeader(request)
+        const cookies = getCookiesFromHeader(request, response)
 
         if (!cookies?.AccessToken) {
             return response
@@ -104,6 +104,7 @@ const verifyUser = async (request, response, next) => {
         request.user = { userId, tenantId, role }
         return next()
     } catch (error) {
+        console.log(error)
         return response
             .status(500)
             .send(
@@ -150,7 +151,7 @@ const allowRoles = (...allowedRoles) => {
 }
 
 const getRefreshToken = async (request, response, next) => {
-    const cookies = getCookiesFromHeader(request)
+    const cookies = getCookiesFromHeader(request, response)
 
     const refreshToken = cookies.RefreshToken
 

@@ -7,7 +7,7 @@ const {
 const { generateAndSetTokens } = require('../services/token.service')
 const { setResponseBody } = require('../utils/responseFormatter.util')
 const bcrypt = require('bcryptjs')
-const { getRefreshToken } = require('../middlewares/auth.middleware')
+const { ERROR_CODES } = require('../constants/error.constant')
 
 const signup = async (request, response) => {
     const { firstName, lastName, email, password, role } = request.body
@@ -22,6 +22,7 @@ const signup = async (request, response) => {
                 .send(
                     setResponseBody(
                         errors.array()[0].msg,
+                        ERROR_CODES.VALIDATION_ERROR,
                         'validation_error',
                         null,
                     ),
@@ -35,6 +36,7 @@ const signup = async (request, response) => {
                 .send(
                     setResponseBody(
                         'Email already exists',
+                        ERROR_CODES.EMAIL_ALREADY_EXISTS,
                         'email_exists',
                         null,
                     ),
@@ -68,7 +70,14 @@ const signup = async (request, response) => {
     } catch (error) {
         response
             .status(500)
-            .send(setResponseBody(error.message, 'server_error', null))
+            .send(
+                setResponseBody(
+                    error.message,
+                    ERROR_CODES.SERVER_ERROR,
+                    'server_error',
+                    null
+                )
+            )
     }
 }
 
