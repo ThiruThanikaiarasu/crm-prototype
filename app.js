@@ -5,6 +5,7 @@ const app = express()
 const cors = require('cors')
 const cookieParser = require('cookie-parser')
 
+const responseTimeLogger = require('./middlewares/responseTime.middleware')
 const authRoute = require('./routes/auth.route')
 const dashboardRoute = require('./routes/dashboard.route')
 
@@ -17,6 +18,8 @@ app.use(
 app.use(cookieParser())
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
+
+app.use(responseTimeLogger)
 
 app.get('/', (request, response) => {
     response.status(200).send({ message: 'Server running successfully.' })

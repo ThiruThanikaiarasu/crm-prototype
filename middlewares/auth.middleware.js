@@ -138,7 +138,7 @@ const allowRoles = (...allowedRoles) => {
                 .status(403)
                 .send(
                     setResponseBody(
-                        "You don’t have access to this resource",
+                        'You don’t have access to this resource',
                         ERROR_CODES.INSUFFICIENT_PERMISSIONS,
                         'authorization_error',
                         null,
