@@ -16,7 +16,7 @@ const createLeadSchema = (tenantId) => {
                 maxLength: [50, 'Contact name must be fewer than 50 characters'],
             },
             phone: {
-                ext: {
+                extension: {
                     type: String,
                     maxLength: [5, 'Phone extension must be fewer than 5 characters'],
                     validate: {
