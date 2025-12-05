@@ -8,6 +8,7 @@ const cookieParser = require('cookie-parser')
 const responseTimeLogger = require('./middlewares/responseTime.middleware')
 const authRoute = require('./routes/auth.route')
 const dashboardRoute = require('./routes/dashboard.route')
+const leadRoute = require('./routes/lead.route')
 
 app.use(
     cors({
@@ -27,5 +28,6 @@ app.get('/', (request, response) => {
 
 app.use('/api/v1/auth', authRoute)
 app.use('/api/v1/dashboard', dashboardRoute)
+app.use('/api/v1/leads', leadRoute)
 
 module.exports = app
