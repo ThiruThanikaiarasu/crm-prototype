@@ -3,6 +3,46 @@ const ms = require('ms')
 
 const refreshTokenTTL = process.env.REFRESH_TOKEN_TTL || '90d'
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     RefreshToken:
+ *       type: object
+ *       required:
+ *         - user
+ *         - token
+ *       properties:
+ *         user:
+ *           type: string
+ *           format: uuid
+ *           description: The user ID associated with this token
+ *         token:
+ *           type: string
+ *           description: The refresh token string
+ *         deviceInfo:
+ *           type: object
+ *           properties:
+ *             ip:
+ *               type: string
+ *             device:
+ *               type: string
+ *             os:
+ *               type: string
+ *             location:
+ *               type: string
+ *         isRevoked:
+ *           type: boolean
+ *           default: false
+ *           description: Whether the token has been revoked
+ *         expiresAt:
+ *           type: string
+ *           format: date-time
+ *           description: Expiration date of the token
+ *         replacedByToken:
+ *           type: string
+ *           description: Token that replaced this one (if rotated)
+ */
 const createRefreshTokenSchema = (tenantId) => {
     return new mongoose.Schema(
         {
