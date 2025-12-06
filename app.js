@@ -10,6 +10,11 @@ const authRoute = require('./routes/auth.route')
 const dashboardRoute = require('./routes/dashboard.route')
 const leadRoute = require('./routes/lead.route')
 
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./configurations/swagger.config');
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
 app.use(
     cors({
         origin: process.env.CORS_ORIGIN_URL,
