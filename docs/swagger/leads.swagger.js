@@ -207,6 +207,11 @@
  *           type: string
  *         description: Filter by company name (partial match)
  *       - in: query
+ *         name: contact
+ *         schema:
+ *           type: string
+ *         description: Filter by contact name (partial match)
+ *       - in: query
  *         name: status
  *         schema:
  *           type: string

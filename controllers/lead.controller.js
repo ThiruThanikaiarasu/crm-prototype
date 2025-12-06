@@ -72,6 +72,7 @@ const getAll = async (request, response) => {
             page,
             limit,
             company,
+            contact,
             status,
             source,
             sort,
@@ -82,6 +83,7 @@ const getAll = async (request, response) => {
         const result = await getAllLeads(tenantId, {
             page,
             limit,
+            contact,
             company,
             status,
             source,

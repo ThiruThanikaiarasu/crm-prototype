@@ -31,6 +31,7 @@ const getAllLeads = async (
         page = 1,
         limit = 10,
         company,
+        contact,
         status,
         source,
         sort = 'createdAt',
@@ -44,6 +45,10 @@ const getAllLeads = async (
     if (company) {
         query.company = { $regex: company, $options: 'i' }
     }
+    
+    if (contact) {
+        query.contact = { $regex: contact, $options: 'i' }
+    }
     if (status) {
         query.status = status
     }
@@ -51,11 +56,6 @@ const getAllLeads = async (
         query.source = { $regex: source, $options: 'i' }
     }
     if (followUp) {
-        // Assuming exact match or simple date filtering for now.
-        // For partial date match, we might need range logic later.
-        // For now, let's assume it handles ISO string exact match if provided,
-        // or we can allow simple date string filtering if needed.
-        // Given 'followUp' is a Date in schema.
         const date = new Date(followUp)
         if (!isNaN(date.getTime())) {
             // Match the entire day
