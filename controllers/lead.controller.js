@@ -68,15 +68,34 @@ const create = async (request, response) => {
 const getAll = async (request, response) => {
     try {
         const { tenantId } = request.user
+        const {
+            page,
+            limit,
+            company,
+            status,
+            source,
+            sort,
+            order,
+            followUp,
+        } = request.query
 
-        const leads = await getAllLeads(tenantId)
+        const result = await getAllLeads(tenantId, {
+            page,
+            limit,
+            company,
+            status,
+            source,
+            sort,
+            order,
+            followUp,
+        })
 
         return response.status(200).send(
             setResponseBody(
                 'Leads fetched successfully',
                 null,
                 ERROR_CODES.SUCCESS,
-                leads,
+                result,
             ),
         )
     } catch (error) {

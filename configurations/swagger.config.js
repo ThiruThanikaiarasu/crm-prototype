@@ -24,7 +24,7 @@ const options = {
             },
         },
     },
-    apis: ['./routes/*.js', './models/*.js'], // Files containing annotations
+    apis: ['./routes/*.js', './models/*.js', './docs/swagger/*.swagger.js'],
 };
 
 module.exports = swaggerJsdoc(options);
