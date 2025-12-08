@@ -13,6 +13,10 @@ const organizationSchema = new mongoose.Schema(
             type: String,
             required: [true, 'Domain is a mandatory field'],
         },
+        admin: {
+            type: mongoose.Schema.Types.ObjectId,
+            required: [true, 'Admin is a mandatory field'],
+        },
     },
     {
         timestamps: true,

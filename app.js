@@ -9,6 +9,7 @@ const cookieParser = require('cookie-parser')
 const authRoute = require('./routes/auth.route')
 const dashboardRoute = require('./routes/dashboard.route')
 const leadRoute = require('./routes/lead.route')
+const organizationRoute = require('./routes/organization.route')
 
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./configurations/swagger.config');
@@ -34,5 +35,6 @@ app.get('/', (request, response) => {
 app.use('/api/v1/auth', authRoute)
 app.use('/api/v1/dashboard', dashboardRoute)
 app.use('/api/v1/leads', leadRoute)
+app.use('/api/v1/organization', organizationRoute)
 
 module.exports = app
