@@ -82,6 +82,15 @@
  *                   errorCode: "1001"
  *                   error: "validation_error"
  *                   data: null
+ *       422:
+ *         description: Unable to verify email — DNS or domain issues
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: "Unable to verify this email address. Please provide a valid one."
+ *               errorCode: "1101"
+ *               error: "validation_error"
+ *               data: null
  *
  *       500:
  *         description: Internal server error

@@ -7,6 +7,8 @@ const ERROR_CODES = {
     INVALID_PASSWORD_FORMAT: '1003',
     MISSING_REQUIRED_FIELDS: '1004',
 
+    NOT_AN_VALID_EMAIL: '1101',
+
     // Authentication Errors (2xxx)
     AUTH_TOKEN_MISSING: '2001',
     ACCESS_TOKEN_MISSING: '2002',

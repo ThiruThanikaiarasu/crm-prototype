@@ -12,7 +12,7 @@ const checkIfOrganizationExists = async (domain) => {
 const createAdminAndOrganization = async ({ title, email, firstName, lastName, password }) => {
 
     const domain = getDomainFromEmail(email)
-    
+
     const tenantId = domain.toLowerCase().replace(/[^a-z0-9]/g, '-')
 
     const User = userModel(tenantId)

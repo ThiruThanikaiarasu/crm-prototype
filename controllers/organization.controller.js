@@ -1,6 +1,7 @@
 const { setResponseBody } = require('../utils/responseFormatter.util')
 const { ERROR_CODES } = require('../constants/error.constant')
 const { checkIfOrganizationExists, createAdminAndOrganization, getDomainFromEmail } = require('../services/organization.service')
+const { validateEmail } = require('../utils/validateEmail.util')
 
 const verifyOrganization = async (request, response) => {
     try {
@@ -11,6 +12,18 @@ const verifyOrganization = async (request, response) => {
                 setResponseBody(
                     'Please fill mandatory field',
                     ERROR_CODES.VALIDATION_ERROR,
+                    'validation_error',
+                    null
+                )
+            )
+        }
+
+        const isValidEmail = await validateEmail(email)
+        if (!isValidEmail) {
+            return response.status(422).send(
+                setResponseBody(
+                    'Unable to verify this email address. Please provide a valid one.',
+                    ERROR_CODES.NOT_AN_VALID_EMAIL,
                     'validation_error',
                     null
                 )
