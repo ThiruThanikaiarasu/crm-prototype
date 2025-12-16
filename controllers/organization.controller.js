@@ -1,7 +1,8 @@
 const { setResponseBody } = require('../utils/responseFormatter.util')
 const { ERROR_CODES } = require('../constants/error.constant')
-const { checkIfOrganizationExists, createAdminAndOrganization, getDomainFromEmail } = require('../services/organization.service')
+const { checkIfOrganizationExists, createAdminAndOrganization, getDomainFromEmail, inviteUsersToOrganization, inviteUser } = require('../services/organization.service')
 const { validateEmail } = require('../utils/validateEmail.util')
+const { validationResult } = require('express-validator')
 
 const verifyOrganization = async (request, response) => {
     try {
@@ -70,7 +71,7 @@ const verifyOrganization = async (request, response) => {
 
 const createOrganization = async (request, response) => {
     try {
-        const { title, email, firstName, lastName, password } = request.body
+        const { title, firstName, lastName, email, password, invitedUsers } = request.body
 
         const errors = validationResult(request)
         if (!errors.isEmpty()) {
@@ -88,6 +89,17 @@ const createOrganization = async (request, response) => {
 
         const result = await createAdminAndOrganization({ title, email, firstName, lastName, password })
 
+        const organizationInvite = await inviteUser(result.organization.tenantId, invitedUsers)
+        if (!organizationInvite) {
+            return response.status(500).send(
+                setResponseBody(
+                    'Failed to inv  ite users',
+                    ERROR_CODES.SERVER_ERROR,
+                    'server_error',
+                    null
+                )
+            )
+        }
         return response.status(201).send(
             setResponseBody(
                 'Organization created successfully',

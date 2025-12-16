@@ -1,4 +1,4 @@
-const userModel = require('../models/userModel')
+const userModel = require('../models/user.model')
 
 const findUserByEmail = async (email, tenantId) => {
     const User = userModel(tenantId)

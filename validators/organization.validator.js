@@ -30,6 +30,10 @@ const validateOrganizationRegisterPayload = [
         .isString().withMessage('Password must be a string')
         .isLength({ min: 8, max: 25 })
         .withMessage('Password must be between 8 and 25 characters'),
+
+    // body('invitedUsers.*.email')
+    //     .notEmpty().withMessage('Email is required')
+    //     .isEmail().withMessage('Invalid email'),
 ]
 
 module.exports = {
