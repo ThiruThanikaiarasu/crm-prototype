@@ -45,7 +45,7 @@ const getAllLeads = async (
     if (company) {
         query.company = { $regex: company, $options: 'i' }
     }
-    
+
     if (contact) {
         query.contact = { $regex: contact, $options: 'i' }
     }
@@ -91,7 +91,46 @@ const getAllLeads = async (
     }
 }
 
+const getLeadById = async (tenantId, id) => {
+    const Lead = leadModel(tenantId)
+    return await Lead.findById(id)
+}
+
+const updateLeadById = async (tenantId, id, payload) => {
+    const Lead = leadModel(tenantId)
+    const lead = await Lead.findById(id)
+
+    if (!lead) {
+        throw new Error('Lead not found')
+    }
+
+    Object.keys(payload).forEach(key => {
+        if (payload[key] === undefined) return
+
+        // handle nested phone separately
+        if (key === 'phone' && typeof payload.phone === 'object') {
+            Object.keys(payload.phone).forEach(phoneKey => {
+                if (payload.phone[phoneKey] !== undefined) {
+                    lead.phone[phoneKey] = payload.phone[phoneKey]
+                }
+            })
+            return
+        }
+
+        lead[key] = payload[key]
+    })
+    return await lead.save()
+}
+
+const deleteLeadById = async (tenantId, id) => {
+    const Lead = leadModel(tenantId)
+    return await Lead.findByIdAndDelete(id)
+}
+
 module.exports = {
     createLead,
     getAllLeads,
+    getLeadById,
+    updateLeadById,
+    deleteLeadById,
 }

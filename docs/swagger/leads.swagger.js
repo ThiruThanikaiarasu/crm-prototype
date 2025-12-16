@@ -351,6 +351,255 @@
  *               data: null
  */
 
+/**
+ * @swagger
+ * /leads/{id}:
+ *   get:
+ *     summary: Get a lead by ID
+ *     tags: [Leads]
+ *     security:
+ *       - bearerAuth: []
+ *
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: Lead ID
+ *         schema:
+ *           type: string
+ *           example: "65c1f3a2e9a34c0012ab1234"
+ *
+ *     responses:
+ *       200:
+ *         description: Lead fetched successfully
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: "Lead fetched successfully"
+ *               errorCode: null
+ *               error: null
+ *               data:
+ *                 company: "Acme Industries"
+ *                 contact: "John Doe"
+ *                 email: "john.doe@acme.com"
+ *                 status: "new"
+ *                 source: "LinkedIn"
+ *                 owner: "65b3c44de4f72b2bdb4e91b3"
+ *
+ *
+ *       404:
+ *         description: Lead not found
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: "Lead not found"
+ *               errorCode: "4201"
+ *               error: "not_found"
+ *               data: null
+ *
+ *
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             examples:
+ *               TokenExpired:
+ *                 value:
+ *                   message: "Session Expired"
+ *                   errorCode: "2003"
+ *                   error: "token_expired"
+ *                   data: null
+ *               AuthenticationError:
+ *                 value:
+ *                   message: "Session Expired"
+ *                   errorCode: "2010"
+ *                   error: "authentication_error"
+ *                   data: null
+ *
+ *
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: "Corresponding error message"
+ *               errorCode: "5001"
+ *               error: "server_error"
+ *               data: null
+ */
+
+/**
+ * @swagger
+ * /leads/{id}:
+ *   patch:
+ *     summary: Update a lead by ID
+ *     tags: [Leads]
+ *     security:
+ *       - bearerAuth: []
+ *
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: Lead ID
+ *         schema:
+ *           type: string
+ *           example: "65c1f3a2e9a34c0012ab1234"
+ *
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               company:
+ *                 type: string
+ *                 example: "Updated Company Name"
+ *               contact:
+ *                 type: string
+ *                 example: "Updated Contact"
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "updated.email@acme.com"
+ *               status:
+ *                 type: string
+ *                 enum: [new, qualified, contacted, done]
+ *                 example: "qualified"
+ *               source:
+ *                 type: string
+ *                 example: "Website"
+ *
+ *
+ *     responses:
+ *       200:
+ *         description: Lead updated successfully
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: "Lead updated successfully"
+ *               errorCode: null
+ *               error: null
+ *               data:
+ *                 company: "Updated Company Name"
+ *                 contact: "Updated Contact"
+ *                 email: "updated.email@acme.com"
+ *                 status: "qualified"
+ *
+ *
+ *       404:
+ *         description: Lead not found
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: "Lead not found"
+ *               errorCode: "LEAD_NOT_FOUND"
+ *               error: "not_found"
+ *               data: null
+ *
+ *
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             examples:
+ *               TokenExpired:
+ *                 value:
+ *                   message: "Session Expired"
+ *                   errorCode: "2003"
+ *                   error: "token_expired"
+ *                   data: null
+ *               AuthenticationError:
+ *                 value:
+ *                   message: "Session Expired"
+ *                   errorCode: "2010"
+ *                   error: "authentication_error"
+ *                   data: null
+ *
+ *
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: "Corresponding error message"
+ *               errorCode: "5001"
+ *               error: "server_error"
+ *               data: null
+ */
+
+/**
+ * @swagger
+ * /leads/{id}:
+ *   delete:
+ *     summary: Delete a lead by ID
+ *     tags: [Leads]
+ *     security:
+ *       - bearerAuth: []
+ *
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: Lead ID
+ *         schema:
+ *           type: string
+ *           example: "65c1f3a2e9a34c0012ab1234"
+ *
+ *     responses:
+ *       200:
+ *         description: Lead deleted successfully
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: "Lead deleted successfully"
+ *               errorCode: null
+ *               error: null
+ *               data:
+ *                 id: "65c1f3a2e9a34c0012ab1234"
+ *
+ *
+ *       404:
+ *         description: Lead not found
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: "Lead not found"
+ *               errorCode: "LEAD_NOT_FOUND"
+ *               error: "not_found"
+ *               data: null
+ *
+ *
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             examples:
+ *               TokenExpired:
+ *                 value:
+ *                   message: "Session Expired"
+ *                   errorCode: "2003"
+ *                   error: "token_expired"
+ *                   data: null
+ *               AuthenticationError:
+ *                 value:
+ *                   message: "Session Expired"
+ *                   errorCode: "2010"
+ *                   error: "authentication_error"
+ *                   data: null
+ *
+ *
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: "Corresponding error message"
+ *               errorCode: "5001"
+ *               error: "server_error"
+ *               data: null
+ */
 
 // Models
 

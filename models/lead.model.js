@@ -56,7 +56,7 @@ const createLeadSchema = (tenantId) => {
                 },
                 default: 'new',
             },
-            source: {
+        source: {
                 type: String,
                 minLength: [2, 'Source must be at least 2 characters'],
                 maxLength: [50, 'Source must be fewer than 50 characters'],

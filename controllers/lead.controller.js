@@ -1,7 +1,7 @@
 const { validationResult } = require('express-validator')
 const { setResponseBody } = require('../utils/responseFormatter.util')
 const { ERROR_CODES } = require('../constants/error.constant')
-const { createLead, getAllLeads } = require('../services/lead.service')
+const { createLead, getAllLeads, getLeadById, updateLeadById, deleteLeadById } = require('../services/lead.service')
 
 const create = async (request, response) => {
     try {
@@ -114,7 +114,108 @@ const getAll = async (request, response) => {
     }
 }
 
+const getALeadById = async (request, response) => {
+    try {
+        const { tenantId } = request.user
+        const { id } = request.params
+
+        const lead = await getLeadById(tenantId, id)
+
+        if(!lead){
+            return response.status(404).send(
+                setResponseBody(
+                    'Lead not found',
+                    ERROR_CODES.LEAD_NOT_FOUND,
+                    'not_found',
+                    null,
+                ),
+            )
+        }
+
+        return response.status(200).send(
+            setResponseBody(
+                'Lead fetched successfully',
+                null,
+                ERROR_CODES.SUCCESS,
+                lead,
+            ),
+        )
+    } catch (error) {
+        response
+            .status(500)
+            .send(
+                setResponseBody(
+                    error.message,
+                    ERROR_CODES.SERVER_ERROR,
+                    'server_error',
+                    null,
+                ),
+            )
+    }
+}
+
+const updateALeadById = async (request, response) => {
+    try {
+        const { tenantId } = request.user
+        const { id } = request.params
+
+        const lead = await updateLeadById(tenantId, id, request.body)
+
+        return response.status(200).send(
+            setResponseBody(
+                'Lead updated successfully',
+                null,
+                ERROR_CODES.SUCCESS,
+                lead,
+            ),
+        )
+    } catch (error) {
+        response
+            .status(500)
+            .send(
+                setResponseBody(
+                    error.message,
+                    ERROR_CODES.SERVER_ERROR,
+                    'server_error',
+                    null,
+                ),
+            )
+    }
+}
+
+const deleteALeadById = async (request, response) => {
+    try {
+        const { tenantId } = request.user
+        const { id } = request.params
+
+        const lead = await deleteLeadById(tenantId, id)
+
+        return response.status(200).send(
+            setResponseBody(
+                'Lead deleted successfully',
+                null,
+                ERROR_CODES.SUCCESS,
+                lead,
+            ),
+        )
+    } catch (error) {
+        response
+            .status(500)
+            .send(
+                setResponseBody(
+                    error.message,
+                    ERROR_CODES.SERVER_ERROR,
+                    'server_error',
+                    null,
+                ),
+            )
+    }
+}
+
 module.exports = {
     create,
     getAll,
+    getALeadById,
+    updateALeadById,
+    deleteALeadById
 }
