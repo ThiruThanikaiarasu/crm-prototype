@@ -73,9 +73,18 @@ const getAllLeads = async (
     const sortOptions = { [sort]: sortOrder }
 
     const [leads, total] = await Promise.all([
-        Lead.find(query).sort(sortOptions).skip(skip).limit(parseInt(limit)),
-        Lead.countDocuments(query),
+        Lead.find(query)
+            // .notDeleted()
+            .sort(sortOptions)
+            .skip(skip)
+            .limit(Number(limit)),
+
+        Lead.countDocuments({
+            ...query,
+            'deleted.isDeleted': false,
+        }),
     ])
+
 
     const totalPages = Math.ceil(total / limit)
 
@@ -122,9 +131,20 @@ const updateLeadById = async (tenantId, id, payload) => {
     return await lead.save()
 }
 
-const deleteLeadById = async (tenantId, id) => {
+const deleteLeadById = async (tenantId, userId, id) => {
     const Lead = leadModel(tenantId)
-    return await Lead.findByIdAndDelete(id)
+    const lead = await Lead.findById(id)
+
+    if (!lead) {
+        throw new Error('Lead not found')
+    }
+
+    lead.deleted.isDeleted = true
+    lead.deleted.at = new Date()
+    lead.deleted.by = userId
+
+    await lead.save()
+    return lead
 }
 
 module.exports = {

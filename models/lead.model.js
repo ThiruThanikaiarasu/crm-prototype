@@ -56,7 +56,7 @@ const createLeadSchema = (tenantId) => {
                 },
                 default: 'new',
             },
-        source: {
+            source: {
                 type: String,
                 minLength: [2, 'Source must be at least 2 characters'],
                 maxLength: [50, 'Source must be fewer than 50 characters'],
@@ -68,16 +68,38 @@ const createLeadSchema = (tenantId) => {
                 type: mongoose.Schema.Types.ObjectId,
                 ref: `${tenantId}_users`,
             },
+            deleted: {
+                isDeleted: {
+                    type: Boolean,
+                    default: false,
+                    index: true,
+                    select: false,
+                },
+                at: {
+                    type: Date,
+                    select: false,
+                },
+                by: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: `${tenantId}_users`,
+                    select: false,
+                },
+            },
         },
         {
             timestamps: true,
+            versionKey: false,
         },
     )
 
     leadSchema.index(
-        { company: 1 },
+        { company: 1, 'deleted.isDeleted': 1 },
         { collation: { locale: 'ar', strength: 1 } }
     )
+
+    leadSchema.pre(/^find/, function() {
+        this.where({'deleted.isDeleted': false})
+    })
 
     return leadSchema
 }

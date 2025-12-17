@@ -101,6 +101,7 @@ const getAll = async (request, response) => {
             ),
         )
     } catch (error) {
+        console.log(error)
         response
             .status(500)
             .send(
@@ -185,17 +186,17 @@ const updateALeadById = async (request, response) => {
 
 const deleteALeadById = async (request, response) => {
     try {
-        const { tenantId } = request.user
+        const { tenantId, userId } = request.user
         const { id } = request.params
 
-        const lead = await deleteLeadById(tenantId, id)
+        const lead = await deleteLeadById(tenantId, userId, id)
 
         return response.status(200).send(
             setResponseBody(
                 'Lead deleted successfully',
                 null,
                 ERROR_CODES.SUCCESS,
-                lead,
+                null,
             ),
         )
     } catch (error) {

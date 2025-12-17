@@ -556,8 +556,8 @@
  *               message: "Lead deleted successfully"
  *               errorCode: null
  *               error: null
- *               data:
- *                 id: "65c1f3a2e9a34c0012ab1234"
+ *               data: null
+ *
  *
  *
  *       404:
