@@ -1,4 +1,5 @@
 const { ERROR_CODES } = require("../constants/error.constant")
+const NotFoundError = require("../errors/NotFoundError")
 const callLogModel = require("../models/callLog.model")
 const leadModel = require("../models/lead.model")
 
@@ -114,15 +115,11 @@ const updateCallLog = async (tenantId, id, payload) => {
 }
 
 const deleteCallLogById = async (tenantId, userId, id) => {
-    const Lead = leadModel(tenantId)
-
+    console.log(tenantId + " " + id + " " + userId)
     const CallLog = callLogModel(tenantId)
     const callLog = await CallLog.findById(id)
-        .populate({
-            path: 'lead',
-            model: Lead.collectionName
-        })
 
+        console.log(callLog)
     if (!callLog) {
         throw new NotFoundError(404, 'Call log not found', ERROR_CODES.CALL_LOG_NOT_FOUND, 'not_found')
     }

@@ -2,6 +2,7 @@ const { validationResult } = require("express-validator")
 const { ERROR_CODES } = require("../constants/error.constant")
 const { createCallLog, getAllCallLogs, getCallLogById, updateCallLog, deleteCallLogById } = require("../services/callLog.service")
 const { setResponseBody } = require("../utils/responseFormatter.util")
+const NotFoundError = require("../errors/NotFoundError")
 
 const create = async (request, response) => {
     try {
@@ -166,10 +167,10 @@ const updateACallLog = async (request, response) => {
 
 const deleteACallLog = async (request, response) => {
     try {
-        const { tenantId } = request.user
+        const { tenantId, userId } = request.user
         const { id } = request.params
 
-        const callLog = await deleteCallLogById(tenantId, id)
+        const callLog = await deleteCallLogById(tenantId, userId, id)
 
         return response.status(200).send(
             setResponseBody(
