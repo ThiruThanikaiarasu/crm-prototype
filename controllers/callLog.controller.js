@@ -49,13 +49,13 @@ const create = async (request, response) => {
                     ),
                 )
     } catch (error) {
-        return response.status(500).send(
+        return response.status(error.statusCode || 500).send(
             setResponseBody(
-                error.message,
-                ERROR_CODES.INTERNAL_SERVER_ERROR,
-                'internal_server_error',
-                null,
-            ),
+                error.message || 'Internal Server Error',
+                error.errorCode || ERROR_CODES.INTERNAL_SERVER_ERROR,
+                error.errorType || 'internal_server_error',
+                null
+            )
         )
     }
 }
@@ -95,13 +95,13 @@ const getAll = async (request, response) => {
             ),
         )
     } catch (error) {
-        return response.status(500).send(
+        return response.status(error.statusCode || 500).send(
             setResponseBody(
-                error.message,
-                ERROR_CODES.INTERNAL_SERVER_ERROR,
-                'internal_server_error',
-                null,
-            ),
+                error.message || 'Internal Server Error',
+                error.errorCode || ERROR_CODES.INTERNAL_SERVER_ERROR,
+                error.errorType || 'internal_server_error',
+                null
+            )
         )
     }
 }
@@ -114,14 +114,7 @@ const getACallLog = async (request, response) => {
         const callLog = await getCallLogById(tenantId, id)
 
         if (!callLog) {
-            return response.status(404).send(
-                setResponseBody(
-                    'Call log not found',
-                    ERROR_CODES.NOT_FOUND,
-                    'not_found',
-                    null,
-                ),
-            )
+            throw new NotFoundError(404, 'Call log not found', ERROR_CODES.CALL_LOG_NOT_FOUND, 'not_found')
         }
 
         return response.status(200).send(
@@ -133,13 +126,13 @@ const getACallLog = async (request, response) => {
             ),
         )
     } catch (error) {
-        return response.status(500).send(
+        return response.status(error.statusCode || 500).send(
             setResponseBody(
-                error.message,
-                ERROR_CODES.INTERNAL_SERVER_ERROR,
-                'internal_server_error',
-                null,
-            ),
+                error.message || 'Internal Server Error',
+                error.errorCode || ERROR_CODES.INTERNAL_SERVER_ERROR,
+                error.errorType || 'internal_server_error',
+                null
+            )
         )
     }
 }
@@ -160,14 +153,13 @@ const updateACallLog = async (request, response) => {
             ),
         )
     } catch (error) {
-        console.log(error)
-        return response.status(500).send(
+        return response.status(error.statusCode || 500).send(
             setResponseBody(
-                error.message,
-                ERROR_CODES.INTERNAL_SERVER_ERROR,
-                'internal_server_error',
-                null,
-            ),
+                error.message || 'Internal Server Error',
+                error.errorCode || ERROR_CODES.INTERNAL_SERVER_ERROR,
+                error.errorType || 'internal_server_error',
+                null
+            )
         )
     }
 }
@@ -188,13 +180,13 @@ const deleteACallLog = async (request, response) => {
             ),
         )
     } catch (error) {
-        return response.status(500).send(
+        return response.status(error.statusCode || 500).send(
             setResponseBody(
-                error.message,
-                ERROR_CODES.INTERNAL_SERVER_ERROR,
-                'internal_server_error',
-                null,
-            ),
+                error.message || 'Internal Server Error',
+                error.errorCode || ERROR_CODES.INTERNAL_SERVER_ERROR,
+                error.errorType || 'internal_server_error',
+                null
+            )
         )
     }
 }

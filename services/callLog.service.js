@@ -1,3 +1,4 @@
+const { ERROR_CODES } = require("../constants/error.constant")
 const callLogModel = require("../models/callLog.model")
 
 const createCallLog = async (tenantId, callLog) => {
@@ -82,7 +83,7 @@ const updateCallLog = async (tenantId, id, payload) => {
     const callLog = await CallLog.findById(id)
 
     if (!callLog) {
-        throw new Error('Call log not found')
+        throw new NotFoundError(404, 'Call log not found', ERROR_CODES.CALL_LOG_NOT_FOUND, 'not_found')
     }
 
     Object.keys(payload).forEach(key => {
@@ -98,7 +99,7 @@ const deleteCallLogById = async (tenantId, userId, id) => {
     const callLog = await CallLog.findById(id)
 
     if (!callLog) {
-        throw new Error('Call log not found')
+        throw new NotFoundError(404, 'Call log not found', ERROR_CODES.CALL_LOG_NOT_FOUND, 'not_found')
     }
 
     callLog.deleted.isDeleted = true
