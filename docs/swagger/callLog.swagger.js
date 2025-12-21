@@ -191,13 +191,33 @@
  *               error: null
  *               data:
  *                 records:
- *                   - lead: "65c1f3a2e9a34c0012ab1234"
+ *                   - _id: "695a1308d65f7e7ded4eb800"
+ *                     lead:
+ *                       _id: "69451308d65f7e7ded4eb76f"
+ *                       company: "UPS"
+ *                       contact: "Balaraman"
+ *                       email: "balaramans@ups.com"
+ *                       status: "contacted"
+ *                       source: "LinkedIn"
+ *                       followUp: "2025-12-24T00:00:00.000Z"
+ *                       owner: "69217fc1d26c2d434bee1ae4"
+ *                       phone:
+ *                         extension: "+91"
+ *                         number: "6369367671"
+ *                       createdAt: "2025-12-19T08:55:36.946Z"
+ *                       updatedAt: "2025-12-19T08:55:36.946Z"
  *                     outcome: "contacted"
- *                     followUp: "2025-02-10T10:30:00.000Z"
- *                     remarks: "Customer requested follow-up"
- *                 page: 1
- *                 limit: 10
- *                 total: 25
+ *                     followUp: "2025-12-26T00:00:00.000Z"
+ *                     remarks: "Follow-up scheduled"
+ *                     createdAt: "2025-12-20T09:15:11.123Z"
+ *                     updatedAt: "2025-12-20T09:15:11.123Z"
+ *
+ *                 info:
+ *                   total: 8
+ *                   page: 1
+ *                   limit: 10
+ *                   totalPages: 1
+ *                   hasMoreRecords: false
  *       401:
  *         description: Unauthorized
  *         content:
@@ -254,7 +274,20 @@
  *               errorCode: null
  *               error: null
  *               data:
- *                 lead: "65c1f3a2e9a34c0012ab1234"
+ *                 lead:
+ *                   _id: "69451308d65f7e7ded4eb76f"
+ *                   company: "UPS"
+ *                   contact: "Balaraman"
+ *                   email: "balaramans@ups.com"
+ *                   status: "contacted"
+ *                   source: "LinkedIn"
+ *                   followUp: "2025-12-24T00:00:00.000Z"
+ *                   owner: "69217fc1d26c2d434bee1ae4"
+ *                   phone:
+ *                     extension: "+91"
+ *                     number: "6369367671"
+ *                   createdAt: "2025-12-19T08:55:36.946Z"
+ *                   updatedAt: "2025-12-19T08:55:36.946Z"
  *                 outcome: "interested"
  *                 followUp: "2025-02-10T10:30:00.000Z"
  *                 remarks: "Positive response"

@@ -1,5 +1,6 @@
 const { ERROR_CODES } = require("../constants/error.constant")
 const callLogModel = require("../models/callLog.model")
+const leadModel = require("../models/lead.model")
 
 const createCallLog = async (tenantId, callLog) => {
     const CallLog = callLogModel(tenantId)
@@ -45,9 +46,15 @@ const getAllCallLogs = async (tenantId, {
     const sortOrder = order === 'asc' ? 1 : -1
     const sortOptions = { [sort]: sortOrder }
 
+    const Lead = leadModel(tenantId)
+
     const [callLogs, total] = await Promise.all([
         CallLog.find(query)
             // .notDeleted()
+            .populate({
+                path: 'lead',
+                model: Lead.collectionName
+            })
             .sort(sortOptions)
             .skip(skip)
             .limit(Number(limit)),
@@ -74,13 +81,25 @@ const getAllCallLogs = async (tenantId, {
 }
 
 const getCallLogById = async (tenantId, id) => {
+    const Lead = leadModel(tenantId)
+
     const CallLog = callLogModel(tenantId)
     return await CallLog.findById(id)
+        .populate({
+            path: 'lead',
+            model: Lead.collectionName
+        })
 }
 
 const updateCallLog = async (tenantId, id, payload) => {
+    const Lead = leadModel(tenantId)
+
     const CallLog = callLogModel(tenantId)
     const callLog = await CallLog.findById(id)
+        .populate({
+            path: 'lead',
+            model: Lead.collectionName
+        })
 
     if (!callLog) {
         throw new NotFoundError(404, 'Call log not found', ERROR_CODES.CALL_LOG_NOT_FOUND, 'not_found')
@@ -95,8 +114,14 @@ const updateCallLog = async (tenantId, id, payload) => {
 }
 
 const deleteCallLogById = async (tenantId, userId, id) => {
+    const Lead = leadModel(tenantId)
+
     const CallLog = callLogModel(tenantId)
     const callLog = await CallLog.findById(id)
+        .populate({
+            path: 'lead',
+            model: Lead.collectionName
+        })
 
     if (!callLog) {
         throw new NotFoundError(404, 'Call log not found', ERROR_CODES.CALL_LOG_NOT_FOUND, 'not_found')
