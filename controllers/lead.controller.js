@@ -43,12 +43,15 @@ const create = async (request, response) => {
             tenantId,
         })
 
+        const leadObj = lead.toObject()
+        const { deleted, ...sanitizedLead } = leadObj
+
         return response.status(201).send(
             setResponseBody(
                 'Lead created successfully',
                 null,
                 ERROR_CODES.CREATED,
-                lead,
+                sanitizedLead,
             ),
         )
     } catch (error) {

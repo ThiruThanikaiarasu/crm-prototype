@@ -39,6 +39,9 @@ const ERROR_CODES = {
     LEAD_NOT_FOUND: '4201',
     LEAD_ALREADY_EXISTS: '4202',
 
+    CALL_LOG_NOT_FOUND: '4301',
+    CALL_LOG_ALREADY_EXISTS: '4302',
+
     // Server Errors (5xxx)
     SERVER_ERROR: '5001',
     DATABASE_ERROR: '5002',
@@ -53,6 +56,10 @@ const ERROR_CODES = {
     LOGOUT_SUCCESS: '0004',
 
     ORGANIZATION_REGISTERED: '0101',
+
+    LEAD_CREATED: '0201',
+
+    CALL_LOG_CREATED: '0301',
 }
 
 module.exports = {

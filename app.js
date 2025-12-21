@@ -10,6 +10,7 @@ const authRoute = require('./routes/auth.route')
 const dashboardRoute = require('./routes/dashboard.route')
 const leadRoute = require('./routes/lead.route')
 const organizationRoute = require('./routes/organization.route')
+const callLogRoute = require('./routes/callLog.route')
 
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./configurations/swagger.config');
@@ -36,5 +37,6 @@ app.use('/api/v1/auth', authRoute)
 app.use('/api/v1/dashboard', dashboardRoute)
 app.use('/api/v1/leads', leadRoute)
 app.use('/api/v1/organization', organizationRoute)
+app.use('/api/v1/call-logs', callLogRoute)
 
 module.exports = app
