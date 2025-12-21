@@ -115,11 +115,9 @@ const updateCallLog = async (tenantId, id, payload) => {
 }
 
 const deleteCallLogById = async (tenantId, userId, id) => {
-    console.log(tenantId + " " + id + " " + userId)
     const CallLog = callLogModel(tenantId)
     const callLog = await CallLog.findById(id)
 
-        console.log(callLog)
     if (!callLog) {
         throw new NotFoundError(404, 'Call log not found', ERROR_CODES.CALL_LOG_NOT_FOUND, 'not_found')
     }

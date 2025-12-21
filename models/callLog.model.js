@@ -10,8 +10,8 @@ const createCallLogSchema = (tenantId) => {
             },
             outcome: {
                 type: String,
-                enum: ['intrested', 'not_intrested', 'contacted', 'done'],
-                default: 'intrested',
+                enum: ['interested', 'not_interested', 'contacted', 'done'],
+                default: 'interested',
             },
             followUp: {
                 type: Date,

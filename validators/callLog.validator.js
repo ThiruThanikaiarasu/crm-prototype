@@ -9,7 +9,7 @@ const validateCreateCallLogPayload = [
 
     body('outcome')
         .optional()
-        .isIn(['intrested', 'not_intrested', 'contacted', 'done'])
+        .isIn(['interested', 'not_interested', 'contacted', 'done'])
         .withMessage('Invalid outcome value'),
 
     body('followUp')
