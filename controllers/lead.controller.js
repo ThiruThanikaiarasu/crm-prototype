@@ -55,16 +55,14 @@ const create = async (request, response) => {
             ),
         )
     } catch (error) {
-        response
-            .status(500)
-            .send(
-                setResponseBody(
-                    error.message,
-                    ERROR_CODES.SERVER_ERROR,
-                    'server_error',
-                    null,
-                ),
+        return response.status(error.statusCode || 500).send(
+            setResponseBody(
+                error.message || 'Internal Server Error',
+                error.errorCode || ERROR_CODES.INTERNAL_SERVER_ERROR,
+                error.errorType || 'internal_server_error',
+                null
             )
+        )
     }
 }
 
@@ -120,20 +118,27 @@ const getAll = async (request, response) => {
 
 const getALeadById = async (request, response) => {
     try {
+        const errors = validationResult(request)
+        if (!errors.isEmpty()) {
+            return response
+                .status(400)
+                .send(
+                    setResponseBody(
+                        errors.array()[0].msg,
+                        ERROR_CODES.VALIDATION_ERROR,
+                        'validation_error',
+                        null,
+                    ),
+                )
+        }
+
         const { tenantId } = request.user
         const { id } = request.params
 
         const lead = await getLeadById(tenantId, id)
 
-        if(!lead){
-            return response.status(404).send(
-                setResponseBody(
-                    'Lead not found',
-                    ERROR_CODES.LEAD_NOT_FOUND,
-                    'not_found',
-                    null,
-                ),
-            )
+        if (!lead) {
+            throw new NotFoundError(404, 'Lead not found', ERROR_CODES.LEAD_NOT_FOUND, 'not_found')
         }
 
         return response.status(200).send(
@@ -145,21 +150,33 @@ const getALeadById = async (request, response) => {
             ),
         )
     } catch (error) {
-        response
-            .status(500)
-            .send(
-                setResponseBody(
-                    error.message,
-                    ERROR_CODES.SERVER_ERROR,
-                    'server_error',
-                    null,
-                ),
+        return response.status(error.statusCode || 500).send(
+            setResponseBody(
+                error.message || 'Internal Server Error',
+                error.errorCode || ERROR_CODES.INTERNAL_SERVER_ERROR,
+                error.errorType || 'internal_server_error',
+                null
             )
+        )
     }
 }
 
 const updateALeadById = async (request, response) => {
     try {
+        const errors = validationResult(request)
+        if (!errors.isEmpty()) {
+            return response
+                .status(400)
+                .send(
+                    setResponseBody(
+                        errors.array()[0].msg,
+                        ERROR_CODES.VALIDATION_ERROR,
+                        'validation_error',
+                        null,
+                    ),
+                )
+        }
+
         const { tenantId } = request.user
         const { id } = request.params
 
@@ -174,21 +191,33 @@ const updateALeadById = async (request, response) => {
             ),
         )
     } catch (error) {
-        response
-            .status(500)
-            .send(
-                setResponseBody(
-                    error.message,
-                    ERROR_CODES.SERVER_ERROR,
-                    'server_error',
-                    null,
-                ),
+        return response.status(error.statusCode || 500).send(
+            setResponseBody(
+                error.message || 'Internal Server Error',
+                error.errorCode || ERROR_CODES.INTERNAL_SERVER_ERROR,
+                error.errorType || 'internal_server_error',
+                null
             )
+        )
     }
 }
 
 const deleteALeadById = async (request, response) => {
     try {
+        const errors = validationResult(request)
+        if (!errors.isEmpty()) {
+            return response
+                .status(400)
+                .send(
+                    setResponseBody(
+                        errors.array()[0].msg,
+                        ERROR_CODES.VALIDATION_ERROR,
+                        'validation_error',
+                        null,
+                    ),
+                )
+        }
+
         const { tenantId, userId } = request.user
         const { id } = request.params
 
@@ -203,16 +232,14 @@ const deleteALeadById = async (request, response) => {
             ),
         )
     } catch (error) {
-        response
-            .status(500)
-            .send(
-                setResponseBody(
-                    error.message,
-                    ERROR_CODES.SERVER_ERROR,
-                    'server_error',
-                    null,
-                ),
+        return response.status(error.statusCode || 500).send(
+            setResponseBody(
+                error.message || 'Internal Server Error',
+                error.errorCode || ERROR_CODES.INTERNAL_SERVER_ERROR,
+                error.errorType || 'internal_server_error',
+                null
             )
+        )
     }
 }
 

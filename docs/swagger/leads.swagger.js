@@ -386,6 +386,16 @@
  *                 source: "LinkedIn"
  *                 owner: "65b3c44de4f72b2bdb4e91b3"
  *
+ *       400:
+ *         description: Invalid request parameter
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: "Invalid lead id"
+ *               errorCode: "1001"
+ *               error: "validation_error"
+ *               data: null
+ *
  *
  *       404:
  *         description: Lead not found
@@ -487,6 +497,15 @@
  *                 email: "updated.email@acme.com"
  *                 status: "qualified"
  *
+ *       400:
+ *         description: Invalid request parameter
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: "Invalid lead id"
+ *               errorCode: "1001"
+ *               error: "validation_error"
+ *               data: null
  *
  *       404:
  *         description: Lead not found
@@ -558,7 +577,15 @@
  *               error: null
  *               data: null
  *
- *
+ *       400:
+ *         description: Invalid request parameter
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: "Invalid lead id"
+ *               errorCode: "1001"
+ *               error: "validation_error"
+ *               data: null
  *
  *       404:
  *         description: Lead not found

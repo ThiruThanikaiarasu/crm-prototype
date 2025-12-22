@@ -109,6 +109,20 @@ const getAll = async (request, response) => {
 
 const getACallLog = async (request, response) => {
     try {
+        const errors = validationResult(request)
+        if (!errors.isEmpty()) {
+            return response
+                .status(400)
+                .send(
+                    setResponseBody(
+                        errors.array()[0].msg,
+                        ERROR_CODES.VALIDATION_ERROR,
+                        'validation_error',
+                        null,
+                    ),
+                )
+        }
+
         const { tenantId } = request.user
         const { id } = request.params
 
@@ -140,6 +154,20 @@ const getACallLog = async (request, response) => {
 
 const updateACallLog = async (request, response) => {
     try {
+        const errors = validationResult(request)
+        if (!errors.isEmpty()) {
+            return response
+                .status(400)
+                .send(
+                    setResponseBody(
+                        errors.array()[0].msg,
+                        ERROR_CODES.VALIDATION_ERROR,
+                        'validation_error',
+                        null,
+                    ),
+                )
+        }
+
         const { tenantId } = request.user
         const { id } = request.params
 
@@ -167,6 +195,20 @@ const updateACallLog = async (request, response) => {
 
 const deleteACallLog = async (request, response) => {
     try {
+        const errors = validationResult(request)
+        if (!errors.isEmpty()) {
+            return response
+                .status(400)
+                .send(
+                    setResponseBody(
+                        errors.array()[0].msg,
+                        ERROR_CODES.VALIDATION_ERROR,
+                        'validation_error',
+                        null,
+                    ),
+                )
+        }
+
         const { tenantId, userId } = request.user
         const { id } = request.params
 

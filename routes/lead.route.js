@@ -4,6 +4,7 @@ const router = express.Router()
 const { create, getAll, getALeadById, updateALeadById, deleteALeadById } = require('../controllers/lead.controller')
 const { validateCreateLeadPayload } = require('../validators/lead.validator')
 const { verifyUser } = require('../middlewares/auth.middleware')
+const { validateObjectIdParam } = require('../validators/common.validator')
 
 router.post(
     '/',
@@ -28,6 +29,8 @@ router.get(
 
     verifyUser,
 
+    validateObjectIdParam,
+
     getALeadById,
 )
 
@@ -36,6 +39,8 @@ router.patch(
 
     verifyUser,
 
+    validateObjectIdParam,
+
     updateALeadById,
 )
 
@@ -43,6 +48,8 @@ router.delete(
     '/:id',
 
     verifyUser,
+
+    validateObjectIdParam,
 
     deleteALeadById,
 )

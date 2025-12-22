@@ -110,7 +110,7 @@ const updateLeadById = async (tenantId, id, payload) => {
     const lead = await Lead.findById(id)
 
     if (!lead) {
-        throw new Error('Lead not found')
+        throw new NotFoundError(404, 'Lead not found', ERROR_CODES.LEAD_NOT_FOUND, 'not_found')
     }
 
     Object.keys(payload).forEach(key => {
@@ -135,8 +135,8 @@ const deleteLeadById = async (tenantId, userId, id) => {
     const Lead = leadModel(tenantId)
     const lead = await Lead.findById(id)
 
-    if (!lead) {
-        throw new Error('Lead not found')
+if (!lead) {
+        throw new NotFoundError(404, 'Lead not found', ERROR_CODES.LEAD_NOT_FOUND, 'not_found')
     }
 
     lead.deleted.isDeleted = true

@@ -291,6 +291,15 @@
  *                 outcome: "interested"
  *                 followUp: "2025-02-10T10:30:00.000Z"
  *                 remarks: "Positive response"
+ *       400:
+ *         description: Invalid request parameter
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: "Invalid lead id"
+ *               errorCode: "1001"
+ *               error: "validation_error"
+ *               data: null
  *       401:
  *         description: Unauthorized
  *         content:
@@ -372,6 +381,16 @@
  *               error: null
  *               data:
  *                 outcome: "done"
+ *       400:
+ *         description: Invalid request parameter
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: "Invalid lead id"
+ *               errorCode: "1001"
+ *               error: "validation_error"
+ *               data: null
+ *
  *
  *       401:
  *         description: Unauthorized
@@ -438,6 +457,15 @@
  *               error: null
  *               data:
  *                 id: "65c1f3a2e9a34c0012ab1234"
+ *       400:
+ *         description: Invalid request parameter
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: "Invalid lead id"
+ *               errorCode: "1001"
+ *               error: "validation_error"
+ *               data: null
  *
  *       401:
  *         description: Unauthorized
