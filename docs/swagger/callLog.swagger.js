@@ -484,6 +484,15 @@
  *                   errorCode: "2010"
  *                   error: "authentication_error"
  *                   data: null
+ *       403:
+ *         description: Forbidden — insufficient permissions
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: "You don’t have access to this resource"
+ *               errorCode: "3001"
+ *               error: "authorization_error"
+ *               data: null
  *
  *       404:
  *         description: Call log not found

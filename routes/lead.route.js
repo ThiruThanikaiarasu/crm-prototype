@@ -3,8 +3,9 @@ const router = express.Router()
 
 const { create, getAll, getALeadById, updateALeadById, deleteALeadById } = require('../controllers/lead.controller')
 const { validateCreateLeadPayload } = require('../validators/lead.validator')
-const { verifyUser } = require('../middlewares/auth.middleware')
+const { verifyUser, allowRoles } = require('../middlewares/auth.middleware')
 const { validateObjectIdParam } = require('../validators/common.validator')
+const ROLES = require('../constants/role.constant')
 
 router.post(
     '/',
@@ -48,6 +49,8 @@ router.delete(
     '/:id',
 
     verifyUser,
+
+    allowRoles(ROLES.SUPER_ADMIN, ROLES.ADMIN),
 
     validateObjectIdParam,
 
