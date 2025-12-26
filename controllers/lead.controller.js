@@ -3,7 +3,7 @@ const { setResponseBody } = require('../utils/responseFormatter.util')
 const { ERROR_CODES } = require('../constants/error.constant')
 const { createLead, getAllLeads, getLeadById, updateLeadById, deleteLeadById } = require('../services/lead.service')
 
-const create = async (request, response) => {
+const createANewLead = async (request, response) => {
     try {
         const errors = validationResult(request)
         if (!errors.isEmpty()) {
@@ -19,47 +19,25 @@ const create = async (request, response) => {
                 )
         }
 
-        const {
-            company,
-            contact,
-            phone,
-            email,
-            status,
-            source,
-            followUp,
-        } = request.body
-
         const { tenantId, userId } = request.user
 
-        const lead = await createLead({
-            company,
-            contact,
-            phone,
-            email,
-            status,
-            source,
-            followUp,
-            owner: userId,
-            tenantId,
-        })
-
-        const leadObj = lead.toObject()
-        const { deleted, ...sanitizedLead } = leadObj
+        const lead = await createLead(request.body, tenantId, userId)
 
         return response.status(201).send(
             setResponseBody(
                 'Lead created successfully',
+                ERROR_CODES.LEAD_CREATED,
                 null,
-                ERROR_CODES.CREATED,
-                sanitizedLead,
+                lead,
             ),
         )
     } catch (error) {
+        console.log(error)
         return response.status(error.statusCode || 500).send(
             setResponseBody(
                 error.message || 'Internal Server Error',
-                error.errorCode || ERROR_CODES.INTERNAL_SERVER_ERROR,
-                error.errorType || 'internal_server_error',
+                error.errorCode || ERROR_CODES.SERVER_ERROR,
+                error.errorType || 'server_error',
                 null
             )
         )
@@ -244,7 +222,7 @@ const deleteALeadById = async (request, response) => {
 }
 
 module.exports = {
-    create,
+    createANewLead,
     getAll,
     getALeadById,
     updateALeadById,

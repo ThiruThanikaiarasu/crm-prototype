@@ -4,7 +4,7 @@
  * @swagger
  * /leads:
  *   post:
- *     summary: Create a new lead
+ *     summary: Create a new lead with company and contacts
  *     tags: [Leads]
  *     security:
  *       - bearerAuth: []
@@ -17,162 +17,155 @@
  *             type: object
  *             required:
  *               - company
- *               - contact
- *               - email
  *             properties:
  *               company:
- *                 type: string
- *                 description: Company name
- *                 minLength: 2
- *                 maxLength: 100
- *                 example: "Acme Industries"
- *               contact:
- *                 type: string
- *                 description: Contact person's name
- *                 minLength: 2
- *                 maxLength: 50
- *                 example: "John Doe"
- *               email:
- *                 type: string
- *                 format: email
- *                 description: Contact email
- *                 example: "johndoe@acme.com"
- *               phone:
  *                 type: object
- *                 description: Phone details
+ *                 required:
+ *                   - name
  *                 properties:
- *                   extension:
+ *                   name:
  *                     type: string
- *                     description: Country/area extension
- *                     maxLength: 5
- *                     example: "+91"
- *                   number:
+ *                     example: "XYZ"
+ *                   phone:
+ *                     type: object
+ *                     properties:
+ *                       extension:
+ *                         type: string
+ *                         example: "+91"
+ *                       number:
+ *                         type: string
+ *                         example: "1234567890"
+ *                   email:
+ *                      type: string
+ *                      format: email
+ *                      example: "xyz@gmail.com"
+ *                   website:
  *                     type: string
- *                     minLength: 8
- *                     maxLength: 15
- *                     description: Phone number
- *                     example: "9876543210"
+ *                     example: "https://xyz.com"
+ *                   socialProfile:
+ *                     type: string
+ *                     example: "https://xyz.linkedin.com"
+ *
+ *               contacts:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     name:
+ *                       type: string
+ *                       example: "Thiru"
+ *                     phone:
+ *                       type: object
+ *                       properties:
+ *                         extension:
+ *                           type: string
+ *                           example: "+91"
+ *                         number:
+ *                           type: string
+ *                           example: "1234567890"
+ *                     email:
+ *                       type: string
+ *                       format: email
+ *                       example: "thiru@gmail.com"
+ *
  *               status:
  *                 type: string
- *                 enum: [new, qualified, contacted, done]
- *                 description: Lead status
- *                 default: new
  *                 example: "new"
+ *
  *               source:
  *                 type: string
- *                 minLength: 2
- *                 maxLength: 50
- *                 description: Source of lead
- *                 example: "LinkedIn"
+ *                 example: "linkedin"
+ *
  *               followUp:
  *                 type: string
  *                 format: date-time
- *                 description: Follow-up date
- *                 example: "2025-12-06T16:29:34.099Z"
- *               owner:
- *                 type: string
- *                 description: Lead owner id
- *                 example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+ *                 example: "2025-12-31T10:00:00.000Z"
  *
  *     responses:
  *       201:
  *         description: Lead created successfully
  *         content:
  *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: "Lead created successfully"
- *                 errorCode:
- *                   type: string
- *                   example: "2010"
- *                 error:
- *                   type: string
- *                   example: null
- *                 data:
- *                   type: object
- *                   example:
- *                     company: "Acme Industries"
- *                     contact: "John Doe"
- *                     email: "johndoe@acme.com"
+ *             example:
+ *               message: "Lead created successfully"
+ *               errorCode: "0201"
+ *               error: null
+ *               data:
+ *                 - _id: "695b1308d65f7e7ded4eb900"
+ *                   company:
+ *                     _id: "695b1208d65f7e7ded4eb800"
+ *                     name: "XYZ"
  *                     phone:
  *                       extension: "+91"
- *                       number: "9876543210"
- *                     status: "new"
- *                     source: "LinkedIn"
- *                     followUp: "2025-12-06T16:29:34.099Z"
- *                     owner: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
- *
+ *                       number: "1234567890"
+ *                     website: "https://xyz.com"
+ *                     socialProfile: "https://xyz.linkedin.com"
+ *                   contact:
+ *                     _id: "695b1255d65f7e7ded4eb850"
+ *                     name: "Thiru"
+ *                     email: "thiru@gmail.com"
+ *                     phone:
+ *                       extension: "+91"
+ *                       number: "1234567890"
+ *                   status: "new"
+ *                   source: "linkedin"
+ *                   followUp: "2025-12-31T10:00:00.000Z"
+ *                   userId: "69217fc1d26c2d434bee1ae4"
+ *                   createdAt: "2025-12-19T08:55:36.946Z"
+ *                   updatedAt: "2025-12-19T08:55:36.946Z"
  *
  *       400:
- *         description: Validation error — one or more fields are invalid
+ *         description: Validation error
  *         content:
  *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Appropriate message will be returned
- *                 errorCode:
- *                   type: string
- *                   example: "1001"
- *                 error:
- *                   type: string
- *                   example: "validation_error"
- *                 data:
- *                   type: string
- *                   nullable: true
- *                   example: null
- *
- *             examples:
- *               MissingMandatoryField:
- *                 summary: Missing required input
- *                 value:
- *                   message: Appropriate message will be returned
- *                   errorCode: "1001"
- *                   error: "validation_error"
- *                   data: null
- *
- *               InvalidEmail:
- *                 summary: Invalid email format
- *                 value:
- *                   message: "Please provide a valid email address"
- *                   errorCode: "1001"
- *                   error: "validation_error"
- *                   data: null
- *
+ *             example:
+ *               message: "Company name is required"
+ *               errorCode: "1001"
+ *               error: "validation_error"
+ *               data: null
  *
  *       401:
- *         description: Unauthorized — token missing, expired, or invalid
+ *         description: Unauthorized
  *         content:
  *           application/json:
  *             examples:
  *               TokenExpired:
- *                 summary: Token expired
  *                 value:
  *                   message: "Session Expired"
  *                   errorCode: "2003"
  *                   error: "token_expired"
  *                   data: null
- *
  *               AuthenticationError:
- *                 summary: Invalid or missing token
  *                 value:
  *                   message: "Session Expired"
  *                   errorCode: "2010"
  *                   error: "authentication_error"
  *                   data: null
  *
+ *       409:
+ *         description: Conflict — company or contact already exists
+ *         content:
+ *           application/json:
+ *             examples:
+ *               CompanyAlreadyExists:
+ *                 value:
+ *                   message: "Company already exists"
+ *                   errorCode: "4402"
+ *                   error: "conflict"
+ *                   data: null
+ *               ContactAlreadyExists:
+ *                 value:
+ *                   message: "Contact already exists"
+ *                   errorCode: "4502"
+ *                   error: "conflict"
+ *                   data: null
  *
  *       500:
  *         description: Internal server error
  *         content:
  *           application/json:
  *             example:
- *               message: "Appropriate error message will be returned"
+ *               message: "Internal Server Error"
  *               errorCode: "5001"
  *               error: "server_error"
  *               data: null

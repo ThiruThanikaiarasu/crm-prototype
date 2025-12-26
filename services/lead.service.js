@@ -1,29 +1,186 @@
+const mongoose = require('mongoose')
+const companyLeadModel = require('../models/companyLead.model')
+const contactLeadModel = require('../models/contactLead.model')
 const leadModel = require('../models/lead.model')
+const ConflictError = require('../errors/ConflictError')
+const { ERROR_CODES } = require('../constants/error.constant')
 
-const createLead = async ({
-    company,
-    contact,
-    phone,
-    email,
-    status,
-    source,
-    followUp,
-    owner,
-    tenantId,
-}) => {
-    const Lead = leadModel(tenantId)
+const createLead = async (payload, tenantId, userId) => {
+    const session = await mongoose.startSession()
 
-    return await Lead.create({
-        company,
-        contact,
-        phone,
-        email,
-        status,
-        source,
-        followUp,
-        owner,
-    })
+    try {
+        session.startTransaction()
+
+        const { company, contacts, status, source, followUp } = payload
+
+        const CompanyLead = companyLeadModel(tenantId)
+        const ContactLead = contactLeadModel(tenantId)
+        const Lead = leadModel(tenantId)
+
+        const escapeRegex = value =>
+            value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+        const companyQuery = {
+            'deleted.isDeleted': false,
+            $or: []
+        }
+
+        if (company?.name) {
+            companyQuery.$or.push({
+                name: {
+                    $regex: `^${escapeRegex(company.name)}$`,
+                    $options: 'i'
+                }
+            })
+        }
+
+        if (company?.phone?.number) {
+            companyQuery.$or.push({
+                'phone.number': company.phone.number
+            })
+        }
+
+        if (companyQuery.$or.length > 0) {
+            const existingCompany = await CompanyLead.findOne(companyQuery)
+            if (existingCompany) {
+                throw new ConflictError(
+                    409,
+                    'Company already exists',
+                    ERROR_CODES.COMPANY_ALREADY_EXISTS,
+                    'conflict'
+                )
+            }
+        }
+
+        const [companyLead] = await CompanyLead.create(
+            [company],
+            { session }
+        )
+
+        const contactsPayload = Array.isArray(contacts) ? contacts : []
+
+        if (contactsPayload.length > 0) {
+            for (const contact of contactsPayload) {
+                const contactQuery = {
+                    'deleted.isDeleted': false,
+                    $or: []
+                }
+
+                if (contact?.email) {
+                    contactQuery.$or.push({
+                        email: {
+                            $regex: `^${escapeRegex(contact.email)}$`,
+                            $options: 'i'
+                        }
+                    })
+                }
+
+                if (contact?.phone?.number) {
+                    contactQuery.$or.push({
+                        'phone.number': contact.phone.number
+                    })
+                }
+
+                if (contactQuery.$or.length > 0) {
+                    const existingContact = await ContactLead.findOne(contactQuery)
+                    if (existingContact) {
+                        throw new ConflictError(
+                            409,
+                            'Contact already exists',
+                            ERROR_CODES.CONTACT_ALREADY_EXISTS,
+                            'conflict'
+                        )
+                    }
+                }
+            }
+        }
+
+        let sanitizedLeads = []
+
+        if (contactsPayload.length > 0) {
+            const contactLeads = await ContactLead.insertMany(
+                contacts,
+                { session }
+            )
+
+            const leads = contactLeads.map(contactLead => ({
+                company: companyLead._id,
+                contact: contactLead._id,
+                status,
+                source,
+                followUp,
+                userId
+            }))
+
+            const insertedLeads = await Lead.insertMany(
+                leads,
+                { session }
+            )
+
+            const contactMap = new Map(
+                contactLeads.map(c => [c._id.toString(), c])
+            )
+
+            const companyObj = companyLead.toObject()
+            delete companyObj.deleted
+
+            sanitizedLeads = insertedLeads.map(lead => {
+                const contactObj = contactMap
+                    .get(lead.contact.toString())
+                    ?.toObject()
+
+                delete contactObj?.deleted
+
+                return {
+                    _id: lead._id,
+                    company: companyObj,
+                    contact: contactObj,
+                    status: lead.status,
+                    source: lead.source,
+                    followUp: lead.followUp,
+                    userId: lead.userId,
+                    createdAt: lead.createdAt,
+                    updatedAt: lead.updatedAt
+                }
+            })
+        } else {
+            const [insertedLead] = await Lead.create(
+                [{
+                    company: companyLead._id,
+                    status,
+                    source,
+                    followUp,
+                    userId
+                }],
+                { session }
+            )
+
+            const companyObj = companyLead.toObject()
+            delete companyObj.deleted
+
+            sanitizedLeads = [{
+                _id: insertedLead._id,
+                company: companyObj,
+                contact: null,
+                status: insertedLead.status,
+                source: insertedLead.source,
+                followUp: insertedLead.followUp,
+                userId: insertedLead.userId,
+                createdAt: insertedLead.createdAt,
+                updatedAt: insertedLead.updatedAt
+            }]
+        }
+
+        await session.commitTransaction()
+        return sanitizedLeads
+    } catch (error) {
+        await session.abortTransaction()
+        throw error
+    } finally {
+        session.endSession()
+    }
 }
+
 
 const getAllLeads = async (
     tenantId,

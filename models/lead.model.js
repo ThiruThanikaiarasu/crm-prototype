@@ -4,49 +4,13 @@ const createLeadSchema = (tenantId) => {
     const leadSchema = new mongoose.Schema(
         {
             company: {
-                type: String,
+                type: mongoose.Schema.Types.ObjectId,
+                ref: `${tenantId}_companyLeads`,
                 required: [true, 'Company is a mandatory field'],
-                minLength: [2, 'Company name must be at least 2 characters'],
-                maxLength: [100, 'Company name must be fewer than 100 characters'],
             },
             contact: {
-                type: String,
-                required: [true, 'Contact is a mandatory field'],
-                minLength: [2, 'Contact name must be at least 2 characters'],
-                maxLength: [50, 'Contact name must be fewer than 50 characters'],
-            },
-            phone: {
-                extension: {
-                    type: String,
-                    maxLength: [5, 'Phone extension must be fewer than 5 characters'],
-                    validate: {
-                        validator: function (value) {
-                            if (!value) return true
-                            return /^\+\d+$/.test(value)  // must start with + then digits
-                        },
-                        message: 'Phone extension must start with + and contain numbers only'
-                    }
-                },
-                number: {
-                    type: String,
-                    minLength: [8, 'Phone number must be at least 8 characters'],
-                    maxLength: [15, 'Phone number must be fewer than 15 characters'],
-                    validate: {
-                        validator: function (value) {
-                            if (!value) return true
-                            return /^\d+$/.test(value)   // digits only
-                        },
-                        message: 'Phone number must contain digits only'
-                    }
-                },
-            },
-            email: {
-                type: String,
-                required: [true, 'Email is a mandatory field'],
-                match: [
-                    /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
-                    'Please fill a valid email address',
-                ],
+                type: mongoose.Schema.Types.ObjectId,
+                ref: `${tenantId}_contactLeads`,
             },
             status: {
                 type: String,

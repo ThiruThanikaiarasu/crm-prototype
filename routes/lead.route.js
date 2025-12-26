@@ -1,8 +1,8 @@
 const express = require('express')
 const router = express.Router()
 
-const { create, getAll, getALeadById, updateALeadById, deleteALeadById } = require('../controllers/lead.controller')
-const { validateCreateLeadPayload } = require('../validators/lead.validator')
+const { createANewLead, getAll, getALeadById, updateALeadById, deleteALeadById } = require('../controllers/lead.controller')
+const { validateCreateANewLeadLeadPayload } = require('../validators/lead.validator')
 const { verifyUser, allowRoles } = require('../middlewares/auth.middleware')
 const { validateObjectIdParam } = require('../validators/common.validator')
 const ROLES = require('../constants/role.constant')
@@ -12,9 +12,9 @@ router.post(
 
     verifyUser,
 
-    validateCreateLeadPayload,
+    validateCreateANewLeadLeadPayload,
 
-    create,
+    createANewLead,
 )
 
 router.get(
