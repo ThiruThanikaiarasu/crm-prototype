@@ -22,12 +22,16 @@ const validateCreateANewLeadLeadPayload = [
 
     body('company.website')
         .optional({ nullable: true })
-        .isURL()
+        .isURL({
+            require_protocol: false
+        })
         .withMessage('Website must be a valid URL'),
 
     body('company.socialProfile')
         .optional({ nullable: true })
-        .isURL()
+        .isURL({
+            require_protocol: false
+        })
         .withMessage('Social profile must be a valid URL'),
 
     body('contacts')
@@ -57,17 +61,17 @@ const validateCreateANewLeadLeadPayload = [
         .isEmail()
         .withMessage('Please provide a valid email address'),
 
-    body('status')
+    body('contacts.*.status')
         .optional({ nullable: true })
         .isIn(['new', 'qualified', 'contacted', 'done'])
         .withMessage('Invalid lead status'),
 
-    body('source')
+    body('contacts.*.source')
         .optional({ nullable: true })
         .isLength({ min: 2, max: 50 })
         .withMessage('Source must be between 2 and 50 characters'),
 
-    body('followUp')
+    body('contacts.*.followUp')
         .optional({ nullable: true })
         .isISO8601()
         .withMessage('Follow up must be a valid date'),

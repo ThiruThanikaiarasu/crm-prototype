@@ -17,6 +17,7 @@
  *             type: object
  *             required:
  *               - company
+ *               - contacts
  *             properties:
  *               company:
  *                 type: object
@@ -25,61 +26,59 @@
  *                 properties:
  *                   name:
  *                     type: string
- *                     example: "XYZ"
+ *                     example: "Tech Solutions Inc"
  *                   phone:
  *                     type: object
  *                     properties:
  *                       extension:
  *                         type: string
- *                         example: "+91"
+ *                         example: "+1"
  *                       number:
  *                         type: string
- *                         example: "1234567890"
- *                   email:
- *                      type: string
- *                      format: email
- *                      example: "xyz@gmail.com"
+ *                         example: "5551234567"
  *                   website:
  *                     type: string
- *                     example: "https://xyz.com"
+ *                     example: "https://techsolutions.com"
  *                   socialProfile:
  *                     type: string
- *                     example: "https://xyz.linkedin.com"
+ *                     example: "https://linkedin.com/company/techsolutions"
  *
  *               contacts:
  *                 type: array
+ *                 minItems: 1
  *                 items:
  *                   type: object
+ *                   required:
+ *                     - name
+ *                     - email
  *                   properties:
  *                     name:
  *                       type: string
- *                       example: "Thiru"
+ *                       example: "John Smith"
  *                     phone:
  *                       type: object
  *                       properties:
  *                         extension:
  *                           type: string
- *                           example: "+91"
+ *                           example: "+1"
  *                         number:
  *                           type: string
- *                           example: "1234567890"
+ *                           example: "5559876543"
  *                     email:
  *                       type: string
  *                       format: email
- *                       example: "thiru@gmail.com"
- *
- *               status:
- *                 type: string
- *                 example: "new"
- *
- *               source:
- *                 type: string
- *                 example: "linkedin"
- *
- *               followUp:
- *                 type: string
- *                 format: date-time
- *                 example: "2025-12-31T10:00:00.000Z"
+ *                       example: "john.smith@gmail.com"
+ *                     status:
+ *                       type: string
+ *                       enum: [new, qualified, contacted, done]
+ *                       example: "qualified"
+ *                     source:
+ *                       type: string
+ *                       example: "referral"
+ *                     followUp:
+ *                       type: string
+ *                       format: date-time
+ *                       example: "2025-12-28T14:30:00.000Z"
  *
  *     responses:
  *       201:
