@@ -3,12 +3,17 @@ const router = express.Router()
 
 const { verifyUser, allowRoles } = require('../middlewares/auth.middleware')
 const { validateObjectIdParam } = require('../validators/common.validator')
+const { create, getAll, getAPipelineById, updateAPipelineById, deleteAPipelineById } = require('../controllers/pipeline.controller')
+const ROLES = require('../constants/role.constant')
+const { validateCreatePipelinePayload } = require('../validators/pipeline.validator')
 
 
 router.post(
     '/',
 
     verifyUser,
+
+    validateCreatePipelinePayload,
 
     create
 )

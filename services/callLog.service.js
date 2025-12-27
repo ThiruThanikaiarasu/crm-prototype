@@ -30,7 +30,6 @@ const getAllCallLogs = async (tenantId, {
     if (followUp) {
         const date = new Date(followUp)
         if (!isNaN(date.getTime())) {
-            // Match the entire day
             const nextDay = new Date(date)
             nextDay.setDate(date.getDate() + 1)
             query.followUp = {

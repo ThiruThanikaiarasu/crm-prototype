@@ -48,6 +48,9 @@ const ERROR_CODES = {
     CONTACT_NOT_FOUND: '4501',
     CONTACT_ALREADY_EXISTS: '4502',
 
+    PIPELINE_NOT_FOUND: '4601',
+    PIPELINE_ALREADY_EXISTS: '4602',
+
     // Server Errors (5xxx)
     SERVER_ERROR: '5001',
     DATABASE_ERROR: '5002',
@@ -66,6 +69,8 @@ const ERROR_CODES = {
     LEAD_CREATED: '0201',
 
     CALL_LOG_CREATED: '0301',
+
+    PIPELINE_CREATED: '0601',
 }
 
 module.exports = {
