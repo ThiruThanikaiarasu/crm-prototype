@@ -3,6 +3,7 @@ const companyLeadModel = require('../models/companyLead.model')
 const contactLeadModel = require('../models/contactLead.model')
 const leadModel = require('../models/lead.model')
 const ConflictError = require('../errors/ConflictError')
+const NotFoundError = require('../errors/NotFoundError')
 const { ERROR_CODES } = require('../constants/error.constant')
 
 const createLead = async (payload, tenantId, userId) => {
@@ -461,45 +462,198 @@ const getLeadById = async (tenantId, id) => {
 }
 
 const updateLeadById = async (tenantId, id, payload) => {
-    const Lead = leadModel(tenantId)
-    const lead = await Lead.findById(id)
+    const session = await mongoose.startSession()
 
-    if (!lead) {
-        throw new NotFoundError(404, 'Lead not found', ERROR_CODES.LEAD_NOT_FOUND, 'not_found')
-    }
+    try {
+        session.startTransaction()
 
-    Object.keys(payload).forEach(key => {
-        if (payload[key] === undefined) return
+        const Lead = leadModel(tenantId)
+        const CompanyLead = companyLeadModel(tenantId)
+        const ContactLead = contactLeadModel(tenantId)
 
-        // handle nested phone separately
-        if (key === 'phone' && typeof payload.phone === 'object') {
-            Object.keys(payload.phone).forEach(phoneKey => {
-                if (payload.phone[phoneKey] !== undefined) {
-                    lead.phone[phoneKey] = payload.phone[phoneKey]
-                }
-            })
-            return
+        const lead = await Lead.findById(id).session(session)
+
+        if (!lead) {
+            throw new NotFoundError(
+                404,
+                'Lead not found',
+                ERROR_CODES.LEAD_NOT_FOUND,
+                'not_found'
+            )
         }
 
-        lead[key] = payload[key]
-    })
-    return await lead.save()
+        const { company, contacts, status, source, followUp } = payload
+
+        if (company && Object.keys(company).length > 0) {
+            const companyUpdateData = {}
+
+            Object.keys(company).forEach(key => {
+                if (company[key] === undefined) return
+
+                if (key === 'phone' && typeof company.phone === 'object') {
+                    Object.keys(company.phone).forEach(phoneKey => {
+                        if (company.phone[phoneKey] !== undefined) {
+                            companyUpdateData[`phone.${phoneKey}`] = company.phone[phoneKey]
+                        }
+                    })
+                    return
+                }
+
+                companyUpdateData[key] = company[key]
+            })
+
+            if (Object.keys(companyUpdateData).length > 0) {
+                await CompanyLead.findByIdAndUpdate(
+                    lead.company,
+                    { $set: companyUpdateData },
+                    { session, new: true }
+                )
+            }
+        }
+
+        if (contacts && Array.isArray(contacts) && contacts.length > 0) {
+            const contactData = contacts[0]
+            const { status: contactStatus, source: contactSource, followUp: contactFollowUp, ...contactFields } = contactData
+
+            if (Object.keys(contactFields).length > 0) {
+                const contactUpdateData = {}
+
+                Object.keys(contactFields).forEach(key => {
+                    if (contactFields[key] === undefined) return
+
+                    if (key === 'phone' && typeof contactFields.phone === 'object') {
+                        Object.keys(contactFields.phone).forEach(phoneKey => {
+                            if (contactFields.phone[phoneKey] !== undefined) {
+                                contactUpdateData[`phone.${phoneKey}`] = contactFields.phone[phoneKey]
+                            }
+                        })
+                        return
+                    }
+
+                    contactUpdateData[key] = contactFields[key]
+                })
+
+                if (Object.keys(contactUpdateData).length > 0 && lead.contact) {
+                    await ContactLead.findByIdAndUpdate(
+                        lead.contact,
+                        { $set: contactUpdateData },
+                        { session, new: true }
+                    )
+                }
+            }
+
+            if (contactStatus !== undefined) {
+                lead.status = contactStatus
+            }
+            if (contactSource !== undefined) {
+                lead.source = contactSource
+            }
+            if (contactFollowUp !== undefined) {
+                lead.followUp = contactFollowUp
+            }
+        }
+
+        if (status !== undefined) {
+            lead.status = status
+        }
+        if (source !== undefined) {
+            lead.source = source
+        }
+        if (followUp !== undefined) {
+            lead.followUp = followUp
+        }
+
+        await lead.save({ session })
+
+        const updatedLead = await Lead.findById(id)
+            .populate('company')
+            .populate('contact')
+            .session(session)
+
+        await session.commitTransaction()
+
+        const companyObj = updatedLead.company?.toObject()
+        const contactObj = updatedLead.contact?.toObject()
+
+        if (companyObj) {
+            delete companyObj.deleted
+        }
+        if (contactObj) {
+            delete contactObj.deleted
+        }
+
+        const sanitizedLead = {
+            _id: updatedLead._id,
+            company: companyObj || null,
+            contact: contactObj || null,
+            status: updatedLead.status,
+            source: updatedLead.source,
+            followUp: updatedLead.followUp,
+            createdAt: updatedLead.createdAt,
+            updatedAt: updatedLead.updatedAt
+        }
+
+        return sanitizedLead
+    } catch (error) {
+        await session.abortTransaction()
+        throw error
+    } finally {
+        session.endSession()
+    }
 }
 
 const deleteLeadById = async (tenantId, userId, id) => {
-    const Lead = leadModel(tenantId)
-    const lead = await Lead.findById(id)
+    const session = await mongoose.startSession()
 
-if (!lead) {
-        throw new NotFoundError(404, 'Lead not found', ERROR_CODES.LEAD_NOT_FOUND, 'not_found')
+    try {
+        session.startTransaction()
+
+        const Lead = leadModel(tenantId)
+        const ContactLead = contactLeadModel(tenantId)
+
+        const lead = await Lead.findOne({
+            _id: id,
+            'deleted.isDeleted': false
+        }).session(session)
+
+        if (!lead) {
+            throw new NotFoundError(
+                404,
+                'Lead not found',
+                ERROR_CODES.LEAD_NOT_FOUND,
+                'not_found'
+            )
+        }
+
+        lead.deleted = {
+            isDeleted: true,
+            deletedAt: new Date(),
+            deletedBy: userId
+        }
+        await lead.save({ session })
+
+        if (lead.contact) {
+            await ContactLead.findByIdAndUpdate(
+                lead.contact,
+                {
+                    $set: {
+                        'deleted.isDeleted': true,
+                        'deleted.deletedAt': new Date(),
+                        'deleted.deletedBy': userId
+                    }
+                },
+                { session }
+            )
+        }
+
+        await session.commitTransaction()
+        return true
+    } catch (error) {
+        await session.abortTransaction()
+        throw error
+    } finally {
+        session.endSession()
     }
-
-    lead.deleted.isDeleted = true
-    lead.deleted.at = new Date()
-    lead.deleted.by = userId
-
-    await lead.save()
-    return lead
 }
 
 module.exports = {
