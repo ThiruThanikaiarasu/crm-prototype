@@ -2,6 +2,7 @@ const { validationResult } = require('express-validator')
 const { setResponseBody } = require('../utils/responseFormatter.util')
 const { ERROR_CODES } = require('../constants/error.constant')
 const { createLead, getAllLeads, getLeadById, updateLeadById, deleteLeadById } = require('../services/lead.service')
+const NotFoundError = require('../errors/NotFoundError')
 
 const createANewLead = async (request, response) => {
     try {

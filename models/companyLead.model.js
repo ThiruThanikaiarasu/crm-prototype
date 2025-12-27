@@ -14,7 +14,7 @@ const createCompanyLeadSchema = (tenantId) => {
                 type: String,
                 trim: true,
                 match: [
-                    /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/,
+                    /^(https?:\/\/)?(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{2,10}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)$/,
                     'Please fill a valid website address',
                 ],
             },
@@ -54,7 +54,7 @@ const createCompanyLeadSchema = (tenantId) => {
                 type: String,
                 trim: true,
                 match: [
-                    /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/,
+                    /^(https?:\/\/)?(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{2,10}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)$/,
                     'Please fill a valid website address',
                 ],
             },

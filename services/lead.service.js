@@ -52,7 +52,6 @@ const createLead = async (payload, tenantId, userId) => {
             }
         }
 
-        // Create company
         const [companyLead] = await CompanyLead.create(
             [company],
             { session }
@@ -60,102 +59,123 @@ const createLead = async (payload, tenantId, userId) => {
 
         const contactsPayload = Array.isArray(contacts) ? contacts : []
 
-        if (contactsPayload.length === 0) {
-            throw new Error('At least one contact is required')
-        }
+        let sanitizedLeads = []
 
-        // Check for duplicate contacts
-        for (const contact of contactsPayload) {
-            const contactQuery = {
-                'deleted.isDeleted': false,
-                $or: []
-            }
+        if (contactsPayload.length > 0) {
+            for (const contact of contactsPayload) {
+                const contactQuery = {
+                    'deleted.isDeleted': false,
+                    $or: []
+                }
 
-            if (contact?.email) {
-                contactQuery.$or.push({
-                    email: {
-                        $regex: `^${escapeRegex(contact.email)}$`,
-                        $options: 'i'
+                if (contact?.email) {
+                    contactQuery.$or.push({
+                        email: {
+                            $regex: `^${escapeRegex(contact.email)}$`,
+                            $options: 'i'
+                        }
+                    })
+                }
+
+                if (contact?.phone?.number) {
+                    contactQuery.$or.push({
+                        'phone.number': contact.phone.number
+                    })
+                }
+
+                if (contactQuery.$or.length > 0) {
+                    const existingContact = await ContactLead.findOne(contactQuery)
+                    if (existingContact) {
+                        throw new ConflictError(
+                            409,
+                            'Contact already exists',
+                            ERROR_CODES.CONTACT_ALREADY_EXISTS,
+                            'conflict'
+                        )
                     }
-                })
-            }
-
-            if (contact?.phone?.number) {
-                contactQuery.$or.push({
-                    'phone.number': contact.phone.number
-                })
-            }
-
-            if (contactQuery.$or.length > 0) {
-                const existingContact = await ContactLead.findOne(contactQuery)
-                if (existingContact) {
-                    throw new ConflictError(
-                        409,
-                        'Contact already exists',
-                        ERROR_CODES.CONTACT_ALREADY_EXISTS,
-                        'conflict'
-                    )
                 }
             }
-        }
 
-        // Separate contact data from lead-specific fields
-        const contactsToInsert = contactsPayload.map(contact => {
-            const { status, source, followUp, ...contactData } = contact
-            return contactData
-        })
+            const contactsToInsert = contactsPayload.map(contact => {
+                const { status, source, followUp, ...contactData } = contact
+                return contactData
+            })
 
-        // Create contacts
-        const contactLeads = await ContactLead.insertMany(
-            contactsToInsert,
-            { session }
-        )
+            const contactLeads = await ContactLead.insertMany(
+                contactsToInsert,
+                { session }
+            )
 
-        // Create leads with contact-specific status, source, followUp
-        const leads = contactLeads.map((contactLead, index) => {
-            const originalContact = contactsPayload[index]
-            return {
-                company: companyLead._id,
-                contact: contactLead._id,
-                status: originalContact.status,
-                source: originalContact.source,
-                followUp: originalContact.followUp,
-                userId
-            }
-        })
+            const leads = contactLeads.map((contactLead, index) => {
+                const originalContact = contactsPayload[index]
+                return {
+                    company: companyLead._id,
+                    contact: contactLead._id,
+                    status: originalContact.status || null,
+                    source: originalContact.source || null,
+                    followUp: originalContact.followUp || null,
+                    userId
+                }
+            })
 
-        const insertedLeads = await Lead.insertMany(
-            leads,
-            { session }
-        )
+            const insertedLeads = await Lead.insertMany(
+                leads,
+                { session }
+            )
 
-        // Prepare sanitized response
-        const contactMap = new Map(
-            contactLeads.map(c => [c._id.toString(), c])
-        )
+            const contactMap = new Map(
+                contactLeads.map(c => [c._id.toString(), c])
+            )
 
-        const companyObj = companyLead.toObject()
-        delete companyObj.deleted
+            const companyObj = companyLead.toObject()
+            delete companyObj.deleted
 
-        const sanitizedLeads = insertedLeads.map(lead => {
-            const contactObj = contactMap
-                .get(lead.contact.toString())
-                ?.toObject()
+            sanitizedLeads = insertedLeads.map(lead => {
+                const contactObj = contactMap
+                    .get(lead.contact.toString())
+                    ?.toObject()
 
-            delete contactObj?.deleted
+                delete contactObj?.deleted
 
-            return {
-                _id: lead._id,
+                return {
+                    _id: lead._id,
+                    company: companyObj,
+                    contact: contactObj,
+                    status: lead.status,
+                    source: lead.source,
+                    followUp: lead.followUp,
+                    userId: lead.userId,
+                    createdAt: lead.createdAt,
+                    updatedAt: lead.updatedAt
+                }
+            })
+        } else {
+            const [insertedLead] = await Lead.create(
+                [{
+                    company: companyLead._id,
+                    contact: null,
+                    source: null,
+                    followUp: null,
+                    userId
+                }],
+                { session }
+            )
+
+            const companyObj = companyLead.toObject()
+            delete companyObj.deleted
+
+            sanitizedLeads = [{
+                _id: insertedLead._id,
                 company: companyObj,
-                contact: contactObj,
-                status: lead.status,
-                source: lead.source,
-                followUp: lead.followUp,
-                userId: lead.userId,
-                createdAt: lead.createdAt,
-                updatedAt: lead.updatedAt
-            }
-        })
+                contact: null,
+                status: insertedLead.status,
+                source: insertedLead.source,
+                followUp: insertedLead.followUp,
+                userId: insertedLead.userId,
+                createdAt: insertedLead.createdAt,
+                updatedAt: insertedLead.updatedAt
+            }]
+        }
 
         await session.commitTransaction()
         return sanitizedLeads
@@ -194,14 +214,22 @@ const getAllLeads = async (
     }
 
     if (source) {
-        matchConditions.source = { $regex: source, $options: 'i' }
+        matchConditions.source = {
+            $regex: new RegExp(source, 'i'),
+            $ne: null
+        }
     }
 
     if (followUp) {
-        const followUpDate = new Date(followUp)
+        const startOfDay = new Date(followUp)
+        startOfDay.setHours(0, 0, 0, 0)
+
+        const endOfDay = new Date(followUp)
+        endOfDay.setHours(23, 59, 59, 999)
+
         matchConditions.followUp = {
-            $gte: new Date(followUpDate.setHours(0, 0, 0, 0)),
-            $lte: new Date(followUpDate.setHours(23, 59, 59, 999))
+            $gte: startOfDay,
+            $lte: endOfDay
         }
     }
 
@@ -289,8 +317,9 @@ const getAllLeads = async (
         })
     }
 
+    const allowedSortFields = ['createdAt', 'updatedAt', 'status', 'source', 'followUp']
+    const sortField = allowedSortFields.includes(sort) ? sort : 'createdAt'
     const sortOrder = order === 'asc' ? 1 : -1
-    const sortField = sort || 'createdAt'
     const sortObject = { [sortField]: sortOrder }
 
     pipeline.push({
