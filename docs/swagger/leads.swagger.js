@@ -240,77 +240,43 @@
  *         description: Leads fetched successfully
  *         content:
  *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: "Leads fetched successfully"
- *                 errorCode:
- *                   type: string
- *                   nullable: true
- *                   example: null
- *                 error:
- *                   type: string
- *                   nullable: true
- *                   example: null
- *                 data:
- *                   type: object
- *                   properties:
- *                     leads:
- *                       type: array
- *                       items:
- *                         type: object
- *                         properties:
- *                           company:
- *                             type: string
- *                             example: "Acme Industries"
- *                           contact:
- *                             type: string
- *                             example: "John Doe"
- *                           email:
- *                             type: string
- *                             example: "johndoe@acme.com"
- *                           phone:
- *                             type: object
- *                             properties:
- *                               extension:
- *                                 type: string
- *                                 example: "+91"
- *                               number:
- *                                 type: string
- *                                 example: "9876543210"
- *                           status:
- *                             type: string
- *                             example: "new"
- *                           source:
- *                             type: string
- *                             example: "LinkedIn"
- *                           followUp:
- *                             type: string
- *                             example: "2025-12-06T16:29:34.099Z"
- *                           owner:
- *                             type: string
- *                             example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
- *                     info:
- *                       type: object
- *                       properties:
- *                         total:
- *                           type: integer
- *                           example: 50
- *                         page:
- *                           type: integer
- *                           example: 1
- *                         limit:
- *                           type: integer
- *                           example: 10
- *                         totalPages:
- *                           type: integer
- *                           example: 5
- *                         hasMoreRecords:
- *                           type: boolean
- *                           example: true
+ *             example:
+ *               message: "Leads fetched successfully"
+ *               errorCode: null
+ *               error: "0000"
+ *               data:
+ *                 leads:
+ *                   - _id: "694eec3309bf60ea3b1e9cc6"
+ *                     company:
+ *                       _id: "694eec3209bf60ea3b1e9cbe"
+ *                       name: "XY"
+ *                       phone:
+ *                         extension: "+91"
+ *                         number: "1234567899"
+ *                       socialProfile: "https://xyz.linkedin.com"
+ *                       createdAt: "2025-12-26T20:12:34.548Z"
+ *                       updatedAt: "2025-12-26T20:12:34.548Z"
+ *                     contact:
+ *                       _id: "694eec3309bf60ea3b1e9cc4"
+ *                       name: "thir"
+ *                       phone:
+ *                         extension: "+91"
+ *                         number: "1234567899"
+ *                       email: "thir@gmail.com"
+ *                       createdAt: "2025-12-26T20:12:35.247Z"
+ *                       updatedAt: "2025-12-26T20:12:35.247Z"
+ *                     status: "new"
+ *                     source: "linkedin"
+ *                     followUp: "2025-12-31T10:00:00.000Z"
+ *                     createdAt: "2025-12-26T20:12:35.552Z"
+ *                     updatedAt: "2025-12-26T20:12:35.552Z"
  *
+ *                 info:
+ *                   total: 1
+ *                   page: 1
+ *                   limit: 10
+ *                   totalPages: 1
+ *                   hasMoreRecords: false
  *
  *       401:
  *         description: Unauthorized — token missing, expired, or invalid
@@ -318,20 +284,17 @@
  *           application/json:
  *             examples:
  *               TokenExpired:
- *                 summary: Token expired
  *                 value:
  *                   message: "Session Expired"
  *                   errorCode: "2003"
  *                   error: "token_expired"
  *                   data: null
  *               AuthenticationError:
- *                 summary: Invalid or missing token
  *                 value:
  *                   message: "Session Expired"
  *                   errorCode: "2010"
  *                   error: "authentication_error"
  *                   data: null
- *
  *
  *       500:
  *         description: Server error
@@ -360,7 +323,7 @@
  *         description: Lead ID
  *         schema:
  *           type: string
- *           example: "65c1f3a2e9a34c0012ab1234"
+ *           example: "694eec3309bf60ea3b1e9cc6"
  *
  *     responses:
  *       200:
@@ -370,14 +333,32 @@
  *             example:
  *               message: "Lead fetched successfully"
  *               errorCode: null
- *               error: null
+ *               error: "0000"
  *               data:
- *                 company: "Acme Industries"
- *                 contact: "John Doe"
- *                 email: "john.doe@acme.com"
+ *                 _id: "694eec3309bf60ea3b1e9cc6"
+ *                 company:
+ *                   _id: "694eec3209bf60ea3b1e9cbe"
+ *                   name: "XY"
+ *                   phone:
+ *                     extension: "+91"
+ *                     number: "1234567899"
+ *                   socialProfile: "https://xyz.linkedin.com"
+ *                   createdAt: "2025-12-26T20:12:34.548Z"
+ *                   updatedAt: "2025-12-26T20:12:34.548Z"
+ *                 contact:
+ *                   _id: "694eec3309bf60ea3b1e9cc4"
+ *                   name: "thir"
+ *                   phone:
+ *                     extension: "+91"
+ *                     number: "1234567899"
+ *                   email: "thir@gmail.com"
+ *                   createdAt: "2025-12-26T20:12:35.247Z"
+ *                   updatedAt: "2025-12-26T20:12:35.247Z"
  *                 status: "new"
- *                 source: "LinkedIn"
- *                 owner: "65b3c44de4f72b2bdb4e91b3"
+ *                 source: "linkedin"
+ *                 followUp: "2025-12-31T10:00:00.000Z"
+ *                 createdAt: "2025-12-26T20:12:35.552Z"
+ *                 updatedAt: "2025-12-26T20:12:35.552Z"
  *
  *       400:
  *         description: Invalid request parameter
@@ -389,7 +370,6 @@
  *               error: "validation_error"
  *               data: null
  *
- *
  *       404:
  *         description: Lead not found
  *         content:
@@ -399,7 +379,6 @@
  *               errorCode: "4201"
  *               error: "not_found"
  *               data: null
- *
  *
  *       401:
  *         description: Unauthorized
@@ -418,7 +397,6 @@
  *                   errorCode: "2010"
  *                   error: "authentication_error"
  *                   data: null
- *
  *
  *       500:
  *         description: Internal server error

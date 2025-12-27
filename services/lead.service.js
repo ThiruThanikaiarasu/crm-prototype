@@ -181,14 +181,13 @@ const createLead = async (payload, tenantId, userId) => {
     }
 }
 
-
 const getAllLeads = async (
     tenantId,
     {
         page = 1,
         limit = 10,
-        company,
         contact,
+        company,
         status,
         source,
         sort = 'createdAt',
@@ -197,52 +196,134 @@ const getAllLeads = async (
     } = {}
 ) => {
     const Lead = leadModel(tenantId)
-    const query = {}
 
-    if (company) {
-        query.company = { $regex: company, $options: 'i' }
+    const skip = (page - 1) * limit
+
+    const matchConditions = {
+        'deleted.isDeleted': false
     }
 
-    if (contact) {
-        query.contact = { $regex: contact, $options: 'i' }
-    }
     if (status) {
-        query.status = status
+        matchConditions.status = status
     }
+
     if (source) {
-        query.source = { $regex: source, $options: 'i' }
+        matchConditions.source = { $regex: source, $options: 'i' }
     }
+
     if (followUp) {
-        const date = new Date(followUp)
-        if (!isNaN(date.getTime())) {
-            // Match the entire day
-            const nextDay = new Date(date)
-            nextDay.setDate(date.getDate() + 1)
-            query.followUp = {
-                $gte: date,
-                $lt: nextDay
-            }
+        const followUpDate = new Date(followUp)
+        matchConditions.followUp = {
+            $gte: new Date(followUpDate.setHours(0, 0, 0, 0)),
+            $lte: new Date(followUpDate.setHours(23, 59, 59, 999))
         }
     }
 
-    const skip = (page - 1) * limit
+    const pipeline = [
+        {
+            $match: matchConditions
+        },
+        {
+            $lookup: {
+                from: `${tenantId}_companyleads`,
+                let: { companyId: '$company' },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $and: [
+                                    { $eq: ['$_id', '$$companyId'] },
+                                    { $eq: ['$deleted.isDeleted', false] }
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        $project: {
+                            deleted: 0
+                        }
+                    }
+                ],
+                as: 'company'
+            }
+        },
+        {
+            $unwind: '$company'
+        },
+        {
+            $lookup: {
+                from: `${tenantId}_contactleads`,
+                let: { contactId: '$contact' },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $and: [
+                                    { $eq: ['$_id', '$$contactId'] },
+                                    { $eq: ['$deleted.isDeleted', false] }
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        $project: {
+                            deleted: 0
+                        }
+                    }
+                ],
+                as: 'contact'
+            }
+        },
+        {
+            $unwind: {
+                path: '$contact',
+                preserveNullAndEmptyArrays: true
+            }
+        },
+        {
+            $project: {
+                deleted: 0
+            }
+        }
+    ]
+
+    const postLookupMatch = {}
+
+    if (company) {
+        postLookupMatch['company.name'] = { $regex: company, $options: 'i' }
+    }
+
+    if (contact) {
+        postLookupMatch['contact.name'] = { $regex: contact, $options: 'i' }
+    }
+
+    if (Object.keys(postLookupMatch).length > 0) {
+        pipeline.push({
+            $match: postLookupMatch
+        })
+    }
+
     const sortOrder = order === 'asc' ? 1 : -1
-    const sortOptions = { [sort]: sortOrder }
+    const sortField = sort || 'createdAt'
+    const sortObject = { [sortField]: sortOrder }
 
-    const [leads, total] = await Promise.all([
-        Lead.find(query)
-            // .notDeleted()
-            .sort(sortOptions)
-            .skip(skip)
-            .limit(Number(limit)),
+    pipeline.push({
+        $facet: {
+            data: [
+                { $sort: sortObject },
+                { $skip: skip },
+                { $limit: Number(limit) }
+            ],
+            totalCount: [
+                { $count: 'count' }
+            ]
+        }
+    })
 
-        Lead.countDocuments({
-            ...query,
-            'deleted.isDeleted': false,
-        }),
-    ])
+    const result = await Lead.aggregate(pipeline)
 
-
+    const leads = result[0].data
+    const total = result[0].totalCount[0]?.count || 0
     const totalPages = Math.ceil(total / limit)
 
     return {
@@ -252,14 +333,116 @@ const getAllLeads = async (
             page: parseInt(page),
             limit: parseInt(limit),
             totalPages,
-            hasMoreRecords: page < totalPages,
-        },
+            hasMoreRecords: page < totalPages
+        }
     }
 }
 
 const getLeadById = async (tenantId, id) => {
     const Lead = leadModel(tenantId)
-    return await Lead.findById(id)
+
+    const pipeline = [
+        {
+            $match: {
+                _id: new mongoose.Types.ObjectId(id),
+                'deleted.isDeleted': false
+            }
+        },
+        {
+            $lookup: {
+                from: `${tenantId}_companyleads`,
+                let: { companyId: '$company' },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $and: [
+                                    { $eq: ['$_id', '$$companyId'] },
+                                    { $eq: ['$deleted.isDeleted', false] }
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        $project: {
+                            deleted: 0
+                        }
+                    }
+                ],
+                as: 'company'
+            }
+        },
+        {
+            $unwind: '$company'
+        },
+        {
+            $lookup: {
+                from: `${tenantId}_contactleads`,
+                let: { contactId: '$contact' },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $and: [
+                                    { $eq: ['$_id', '$$contactId'] },
+                                    { $eq: ['$deleted.isDeleted', false] }
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        $project: {
+                            deleted: 0
+                        }
+                    }
+                ],
+                as: 'contact'
+            }
+        },
+        {
+            $unwind: {
+                path: '$contact',
+                preserveNullAndEmptyArrays: true
+            }
+        },
+        {
+            $lookup: {
+                from: `${tenantId}_users`,
+                let: { ownerId: '$owner' },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $eq: ['$_id', '$$ownerId']
+                            }
+                        }
+                    },
+                    {
+                        $project: {
+                            password: 0,
+                            deleted: 0
+                        }
+                    }
+                ],
+                as: 'owner'
+            }
+        },
+        {
+            $unwind: {
+                path: '$owner',
+                preserveNullAndEmptyArrays: true
+            }
+        },
+        {
+            $project: {
+                deleted: 0
+            }
+        }
+    ]
+
+    const result = await Lead.aggregate(pipeline)
+
+    return result.length > 0 ? result[0] : null
 }
 
 const updateLeadById = async (tenantId, id, payload) => {

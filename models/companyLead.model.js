@@ -79,7 +79,7 @@ const createCompanyLeadSchema = (tenantId) => {
         },
         {
             timestamps: true,
-            collection: `companyLeads_${tenantId}`,
+            versionKey: false,
         }
     )
 
