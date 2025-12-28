@@ -159,15 +159,18 @@
  *         name: lead
  *         schema:
  *           type: string
+ *           description: Filter by lead ID
  *       - in: query
  *         name: outcome
  *         schema:
  *           type: string
+ *           description: Filter by call outcome
  *       - in: query
  *         name: followUp
  *         schema:
  *           type: string
  *           format: date
+ *           description: Filter by follow-up date
  *       - in: query
  *         name: sort
  *         schema:
@@ -188,36 +191,49 @@
  *             example:
  *               message: "Call logs fetched successfully"
  *               errorCode: null
- *               error: null
+ *               error: "0000"
  *               data:
- *                 records:
- *                   - _id: "695a1308d65f7e7ded4eb800"
+ *                 callLogs:
+ *                   - _id: "695021a8533f976683911867"
  *                     lead:
- *                       _id: "69451308d65f7e7ded4eb76f"
- *                       company: "UPS"
- *                       contact: "Balaraman"
- *                       email: "balaramans@ups.com"
- *                       status: "contacted"
- *                       source: "LinkedIn"
- *                       followUp: "2025-12-24T00:00:00.000Z"
- *                       owner: "69217fc1d26c2d434bee1ae4"
- *                       phone:
- *                         extension: "+91"
- *                         number: "6369367671"
- *                       createdAt: "2025-12-19T08:55:36.946Z"
- *                       updatedAt: "2025-12-19T08:55:36.946Z"
- *                     outcome: "contacted"
- *                     followUp: "2025-12-26T00:00:00.000Z"
- *                     remarks: "Follow-up scheduled"
- *                     createdAt: "2025-12-20T09:15:11.123Z"
- *                     updatedAt: "2025-12-20T09:15:11.123Z"
+ *                       _id: "694fec0d231a3da53bdd19a1"
+ *                       company:
+ *                         _id: "694fec0c231a3da53bdd1997"
+ *                         name: "Tech Solutions Inc"
+ *                         website: "https://techsolutions.com"
+ *                         phone:
+ *                           extension: "+1"
+ *                           number: "5551234567"
+ *                         socialProfile: "https://linkedin.com/company/techsolutions"
+ *                         createdAt: "2025-12-27T14:24:12.499Z"
+ *                         updatedAt: "2025-12-27T14:24:12.499Z"
+ *                       contact:
+ *                         _id: "694fec0d231a3da53bdd199e"
+ *                         name: "John Smith"
+ *                         phone:
+ *                           extension: "+1"
+ *                           number: "5559876543"
+ *                         email: "john.smith@gmail.com"
+ *                         createdAt: "2025-12-27T14:24:13.332Z"
+ *                         updatedAt: "2025-12-27T14:24:13.332Z"
+ *                       status: "qualified"
+ *                       source: "referral"
+ *                       followUp: "2025-12-28T14:30:00.000Z"
+ *                       createdAt: "2025-12-27T14:24:13.610Z"
+ *                       updatedAt: "2025-12-27T14:24:13.610Z"
+ *                     outcome: "interested"
+ *                     followUp: "2025-12-31T00:00:00.000Z"
+ *                     remarks: "positive.. next meeting scheduled"
+ *                     createdAt: "2025-12-27T18:12:56.628Z"
+ *                     updatedAt: "2025-12-27T18:12:56.628Z"
  *
  *                 info:
- *                   total: 8
+ *                   total: 1
  *                   page: 1
  *                   limit: 10
  *                   totalPages: 1
  *                   hasMoreRecords: false
+ *
  *       401:
  *         description: Unauthorized
  *         content:
@@ -260,9 +276,10 @@
  *       - in: path
  *         name: id
  *         required: true
+ *         description: Call log ID
  *         schema:
  *           type: string
- *           example: "65c1f3a2e9a34c0012ab1234"
+ *           example: "695021a8533f976683911867"
  *
  *     responses:
  *       200:
@@ -272,34 +289,51 @@
  *             example:
  *               message: "Call log fetched successfully"
  *               errorCode: null
- *               error: null
+ *               error: "0000"
  *               data:
+ *                 _id: "695021a8533f976683911867"
  *                 lead:
- *                   _id: "69451308d65f7e7ded4eb76f"
- *                   company: "UPS"
- *                   contact: "Balaraman"
- *                   email: "balaramans@ups.com"
- *                   status: "contacted"
- *                   source: "LinkedIn"
- *                   followUp: "2025-12-24T00:00:00.000Z"
- *                   owner: "69217fc1d26c2d434bee1ae4"
- *                   phone:
- *                     extension: "+91"
- *                     number: "6369367671"
- *                   createdAt: "2025-12-19T08:55:36.946Z"
- *                   updatedAt: "2025-12-19T08:55:36.946Z"
+ *                   _id: "694fec0d231a3da53bdd19a1"
+ *                   company:
+ *                     _id: "694fec0c231a3da53bdd1997"
+ *                     name: "Tech Solutions Inc"
+ *                     website: "https://techsolutions.com"
+ *                     phone:
+ *                       extension: "+1"
+ *                       number: "5551234567"
+ *                     socialProfile: "https://linkedin.com/company/techsolutions"
+ *                     createdAt: "2025-12-27T14:24:12.499Z"
+ *                     updatedAt: "2025-12-27T14:24:12.499Z"
+ *                   contact:
+ *                     _id: "694fec0d231a3da53bdd199e"
+ *                     name: "John Smith"
+ *                     phone:
+ *                       extension: "+1"
+ *                       number: "5559876543"
+ *                     email: "john.smith@gmail.com"
+ *                     createdAt: "2025-12-27T14:24:13.332Z"
+ *                     updatedAt: "2025-12-27T14:24:13.332Z"
+ *                   status: "qualified"
+ *                   source: "referral"
+ *                   followUp: "2025-12-28T14:30:00.000Z"
+ *                   createdAt: "2025-12-27T14:24:13.610Z"
+ *                   updatedAt: "2025-12-27T14:24:13.610Z"
  *                 outcome: "interested"
- *                 followUp: "2025-02-10T10:30:00.000Z"
- *                 remarks: "Positive response"
+ *                 followUp: "2025-12-31T00:00:00.000Z"
+ *                 remarks: "positive.. next meeting scheduled"
+ *                 createdAt: "2025-12-27T18:12:56.628Z"
+ *                 updatedAt: "2025-12-27T18:12:56.628Z"
+ *
  *       400:
  *         description: Invalid request parameter
  *         content:
  *           application/json:
  *             example:
- *               message: "Invalid lead id"
+ *               message: "Invalid call log id"
  *               errorCode: "1001"
  *               error: "validation_error"
  *               data: null
+ *
  *       401:
  *         description: Unauthorized
  *         content:
@@ -337,7 +371,6 @@
  *               errorCode: "5001"
  *               error: "internal_server_error"
  *               data: null
- *
  */
 
 /**
@@ -353,6 +386,10 @@
  *       - in: path
  *         name: id
  *         required: true
+ *         description: Call log ID
+ *         schema:
+ *           type: string
+ *           example: "695021a8533f976683911867"
  *
  *     requestBody:
  *       required: true
@@ -367,8 +404,10 @@
  *               followUp:
  *                 type: string
  *                 format: date-time
+ *                 example: "2025-12-31T00:00:00.000Z"
  *               remarks:
  *                 type: string
+ *                 example: "Completed successfully"
  *
  *     responses:
  *       200:
@@ -377,20 +416,51 @@
  *           application/json:
  *             example:
  *               message: "Call log updated successfully"
- *               errorCode: "0000"
- *               error: null
+ *               errorCode: null
+ *               error: "0000"
  *               data:
+ *                 _id: "695021a8533f976683911867"
+ *                 lead:
+ *                   _id: "694fec0d231a3da53bdd19a1"
+ *                   company:
+ *                     _id: "694fec0c231a3da53bdd1997"
+ *                     name: "Tech Solutions Inc"
+ *                     website: "https://techsolutions.com"
+ *                     phone:
+ *                       extension: "+1"
+ *                       number: "5551234567"
+ *                     socialProfile: "https://linkedin.com/company/techsolutions"
+ *                     createdAt: "2025-12-27T14:24:12.499Z"
+ *                     updatedAt: "2025-12-27T14:24:12.499Z"
+ *                   contact:
+ *                     _id: "694fec0d231a3da53bdd199e"
+ *                     name: "John Smith"
+ *                     phone:
+ *                       extension: "+1"
+ *                       number: "5559876543"
+ *                     email: "john.smith@gmail.com"
+ *                     createdAt: "2025-12-27T14:24:13.332Z"
+ *                     updatedAt: "2025-12-27T14:24:13.332Z"
+ *                   status: "qualified"
+ *                   source: "referral"
+ *                   followUp: "2025-12-28T14:30:00.000Z"
+ *                   createdAt: "2025-12-27T14:24:13.610Z"
+ *                   updatedAt: "2025-12-27T14:24:13.610Z"
  *                 outcome: "done"
+ *                 followUp: "2025-12-31T00:00:00.000Z"
+ *                 remarks: "Completed successfully"
+ *                 createdAt: "2025-12-27T18:12:56.628Z"
+ *                 updatedAt: "2025-12-28T09:15:41.221Z"
+ *
  *       400:
  *         description: Invalid request parameter
  *         content:
  *           application/json:
  *             example:
- *               message: "Invalid lead id"
+ *               message: "Invalid call log id"
  *               errorCode: "1001"
  *               error: "validation_error"
  *               data: null
- *
  *
  *       401:
  *         description: Unauthorized
@@ -430,7 +500,6 @@
  *               error: "internal_server_error"
  *               data: null
  */
-
 
 /**
  * @swagger
