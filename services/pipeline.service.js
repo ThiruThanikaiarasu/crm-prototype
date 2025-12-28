@@ -277,9 +277,128 @@ const getPipelineById = async (tenantId, pipelineId) => {
     return pipelines[0]
 }
 
+const updatePipelineById = async (tenantId, pipelineId, pipelineData) => {
+    const Pipeline = pipelineModel(tenantId)
+    const Lead = leadModel(tenantId)
+
+    const pipeline = await Pipeline.findOne({
+        _id: pipelineId,
+        'deleted.isDeleted': false
+    })
+
+    if (!pipeline) {
+        throw new NotFoundError(
+            404,
+            'Pipeline not found',
+            ERROR_CODES.PIPELINE_NOT_FOUND,
+            'not_found'
+        )
+    }
+
+    console.log(pipeline.lead)
+
+    const leadAggregatePipeline = [
+        {
+            $match: {
+                _id: pipeline.lead
+            }
+        },
+        {
+            $lookup: {
+                from: `${tenantId}_companyleads`,
+                let: { companyId: '$company' },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $and: [
+                                    { $eq: ['$_id', '$$companyId'] },
+                                    { $eq: ['$deleted.isDeleted', false] }
+                                ]
+                            }
+                        }
+                    },
+                    { $project: { deleted: 0 } }
+                ],
+                as: 'company'
+            }
+        },
+        { $unwind: '$company' },
+        {
+            $lookup: {
+                from: `${tenantId}_contactleads`,
+                let: { contactId: '$contact' },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $and: [
+                                    { $eq: ['$_id', '$$contactId'] },
+                                    { $eq: ['$deleted.isDeleted', false] }
+                                ]
+                            }
+                        }
+                    },
+                    { $project: { deleted: 0 } }
+                ],
+                as: 'contact'
+            }
+        },
+        {
+            $unwind: {
+                path: '$contact',
+                preserveNullAndEmptyArrays: true
+            }
+        },
+        { $project: { deleted: 0 } }
+    ]
+
+    const leadData = await Lead.aggregate(leadAggregatePipeline)
+
+    Object.keys(pipelineData).forEach(key => {
+        if (key !== 'lead' && pipelineData[key] !== undefined) {
+            pipeline[key] = pipelineData[key]
+        }
+    })
+
+    await pipeline.save()
+
+    return {
+        ...pipeline.toObject(),
+        lead: leadData[0] || null
+    }
+}
+
+const deletePipelineById = async (tenantId, userId, id) => {
+    const Pipeline = pipelineModel(tenantId)
+
+    const pipeline = await Pipeline.findOne({
+        _id: id,
+        'deleted.isDeleted': false
+    })
+
+    if (!pipeline) {
+        throw new NotFoundError(
+            404,
+            'Pipeline not found',
+            ERROR_CODES.PIPELINE_NOT_FOUND,
+            'not_found'
+        )
+    }
+
+    pipeline.deleted.isDeleted = true
+    pipeline.deleted.at = new Date()
+    pipeline.deleted.by = userId
+
+    await pipeline.save()
+
+    return pipeline
+}
 
 module.exports = {
     createPipeline,
     getAllPipelines,
-    getPipelineById
+    getPipelineById,
+    updatePipelineById,
+    deletePipelineById
 }
