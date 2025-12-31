@@ -1,6 +1,6 @@
 const { validationResult } = require("express-validator")
 const { ERROR_CODES } = require("../constants/error.constant")
-const { createCallLog, getAllCallLogs, getCallLogById, updateCallLog, deleteCallLogById } = require("../services/callLog.service")
+const { createCallLog, getAllCallLogs, getCallLogById, updateCallLog, deleteCallLogById, searchCompanies, searchLeadsByCompany } = require("../services/callLog.service")
 const { setResponseBody } = require("../utils/responseFormatter.util")
 const NotFoundError = require("../errors/NotFoundError")
 
@@ -22,6 +22,8 @@ const create = async (request, response) => {
 
         const {
             lead,
+            companyId,
+            leadName,
             outcome,
             followUp,
             remarks
@@ -31,25 +33,24 @@ const create = async (request, response) => {
 
         const callLog = await createCallLog(tenantId, {
             lead,
+            companyId,
+            leadName,
             outcome,
             followUp,
             remarks,
             owner: userId,
-            tenantId,
         })
 
-        const callLogObj = callLog.toObject()
-        const { deleted, ...sanitizedCallLog } = callLogObj
-
         return response.status(201).send(
-                    setResponseBody(
-                        'Call log created successfully',
-                        null,
-                        ERROR_CODES.CALL_LOG_CREATED,
-                        sanitizedCallLog,
-                    ),
-                )
+            setResponseBody(
+                'Call log created successfully',
+                null,
+                ERROR_CODES.CALL_LOG_CREATED,
+                callLog,
+            ),
+        )
     } catch (error) {
+        console.log(error)
         return response.status(error.statusCode || 500).send(
             setResponseBody(
                 error.message || 'Internal Server Error',
@@ -234,10 +235,66 @@ const deleteACallLog = async (request, response) => {
     }
 }
 
+const searchCompaniesHandler = async (request, response) => {
+    try {
+        const { tenantId } = request.user
+        const { search, page, limit } = request.query
+
+        const result = await searchCompanies(tenantId, { search, page, limit })
+
+        return response.status(200).send(
+            setResponseBody(
+                'Companies fetched successfully',
+                null,
+                ERROR_CODES.SUCCESS,
+                result,
+            ),
+        )
+    } catch (error) {
+        return response.status(error.statusCode || 500).send(
+            setResponseBody(
+                error.message || 'Internal Server Error',
+                error.errorCode || ERROR_CODES.INTERNAL_SERVER_ERROR,
+                error.errorType || 'internal_server_error',
+                null
+            )
+        )
+    }
+}
+
+const searchLeadsByCompanyHandler = async (request, response) => {
+    try {
+        const { tenantId } = request.user
+        const { companyId } = request.query
+
+        const leads = await searchLeadsByCompany(tenantId, companyId)
+
+        return response.status(200).send(
+            setResponseBody(
+                leads ? 'Leads fetched successfully' : 'No leads found for this company',
+                null,
+                ERROR_CODES.SUCCESS,
+                leads,
+            ),
+        )
+    } catch (error) {
+        return response.status(error.statusCode || 500).send(
+            setResponseBody(
+                error.message || 'Internal Server Error',
+                error.errorCode || ERROR_CODES.INTERNAL_SERVER_ERROR,
+                error.errorType || 'internal_server_error',
+                null
+            )
+        )
+    }
+}
+
 module.exports = {
     create,
     getAll,
     getACallLog,
     updateACallLog,
     deleteACallLog,
+    searchCompaniesHandler,
+    searchLeadsByCompanyHandler,
 }

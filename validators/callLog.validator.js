@@ -1,11 +1,34 @@
 const { body } = require('express-validator')
 
 const validateCreateCallLogPayload = [
+    // lead is optional - if not provided, companyId + leadName must be provided
     body('lead')
-        .notEmpty()
-        .withMessage('Lead is required')
+        .optional()
         .isMongoId()
         .withMessage('Lead must be a valid ID'),
+
+    // companyId is required only if lead is not provided
+    body('companyId')
+        .optional()
+        .isMongoId()
+        .withMessage('Company ID must be a valid ID'),
+
+    // leadName is required only if lead is not provided
+    body('leadName')
+        .optional()
+        .isString()
+        .withMessage('Lead name must be a string')
+        .isLength({ min: 2, max: 100 })
+        .withMessage('Lead name must be between 2 and 100 characters'),
+
+    // Custom validation: either lead OR (companyId + leadName) must be provided
+    body().custom((value, { req }) => {
+        const { lead, companyId, leadName } = req.body
+        if (!lead && (!companyId || !leadName)) {
+            throw new Error('Either lead ID or (companyId + leadName) is required')
+        }
+        return true
+    }),
 
     body('outcome')
         .optional()

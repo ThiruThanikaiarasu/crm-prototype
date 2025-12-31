@@ -30,7 +30,7 @@ const createLeadSchema = (tenantId) => {
             },
             priority: {
                 type: Number,
-                min: [1, 'Priority must be at least 1'],
+                min: [0, 'Priority must be at least 0'],
                 default: 0,
             },
             owner: {

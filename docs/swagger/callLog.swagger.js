@@ -4,22 +4,16 @@
  *   schemas:
  *     CallLog:
  *       type: object
- *       required:
- *         - lead
- *         - outcome
- *         - followUp
- *         - remarks
  *       properties:
  *         _id:
  *           type: string
  *           example: "65c1f3a2e9a34c0012ab1234"
  *         lead:
- *           type: string
- *           description: Lead ID
- *           example: "65c1f3a2e9a34c0012ab9999"
+ *           type: object
+ *           description: Lead details (flattened contact info)
  *         outcome:
  *           type: string
- *           enum: [intrested, not_intrested, contacted, done]
+ *           enum: [interested, not_interested, contacted, done]
  *           example: "contacted"
  *         followUp:
  *           type: string
@@ -43,6 +37,10 @@
  * /call-logs:
  *   post:
  *     summary: Create a call log
+ *     description: |
+ *       Create a call log with either:
+ *       - An existing lead ID, OR
+ *       - A companyId + leadName (will create a new lead with the company's phone)
  *     tags: [Call Logs]
  *     security:
  *       - bearerAuth: []
@@ -53,14 +51,23 @@
  *         application/json:
  *           schema:
  *             type: object
- *             required: [lead, outcome, followUp, remarks]
+ *             required: [followUp, remarks]
  *             properties:
  *               lead:
  *                 type: string
+ *                 description: Existing lead ID (optional if companyId + leadName provided)
  *                 example: "65c1f3a2e9a34c0012ab9999"
+ *               companyId:
+ *                 type: string
+ *                 description: Company ID (required if lead not provided)
+ *                 example: "65c1f3a2e9a34c0012ab1111"
+ *               leadName:
+ *                 type: string
+ *                 description: Name for new lead (required if lead not provided)
+ *                 example: "John Doe"
  *               outcome:
  *                 type: string
- *                 enum: [intrested, not_intrested, contacted, done]
+ *                 enum: [interested, not_interested, contacted, done]
  *                 example: "contacted"
  *               followUp:
  *                 type: string
@@ -69,6 +76,22 @@
  *               remarks:
  *                 type: string
  *                 example: "Customer requested follow-up"
+ *           examples:
+ *             withExistingLead:
+ *               summary: With existing lead ID
+ *               value:
+ *                 lead: "65c1f3a2e9a34c0012ab9999"
+ *                 outcome: "contacted"
+ *                 followUp: "2025-02-10T10:30:00.000Z"
+ *                 remarks: "Customer requested follow-up"
+ *             withNewLead:
+ *               summary: Create new lead
+ *               value:
+ *                 companyId: "65c1f3a2e9a34c0012ab1111"
+ *                 leadName: "John Doe"
+ *                 outcome: "interested"
+ *                 followUp: "2025-02-10T10:30:00.000Z"
+ *                 remarks: "New contact from company"
  *
  *     responses:
  *       201:
@@ -77,20 +100,44 @@
  *           application/json:
  *             example:
  *               message: "Call log created successfully"
- *               errorCode: "0301"
- *               error: null
+ *               errorCode: null
+ *               error: "0301"
  *               data:
- *                 lead: "65c1f3a2e9a34c0012ab9999"
+ *                 _id: "695021a8533f976683911867"
  *                 outcome: "contacted"
  *                 followUp: "2025-02-10T10:30:00.000Z"
  *                 remarks: "Customer requested follow-up"
+ *                 createdAt: "2025-12-27T18:12:56.628Z"
+ *                 updatedAt: "2025-12-27T18:12:56.628Z"
+ *                 lead:
+ *                   _id: "694fec0d231a3da53bdd19a1"
+ *                   name: "John Doe"
+ *                   phone:
+ *                     extension: "+1"
+ *                     number: "5559876543"
+ *                   email: "john.doe@example.com"
+ *                   status: null
+ *                   source: null
+ *                   followUp: null
+ *                   priority: 1
+ *                   createdAt: "2025-12-27T14:24:13.610Z"
+ *                   updatedAt: "2025-12-27T14:24:13.610Z"
+ *                   company:
+ *                     _id: "694fec0c231a3da53bdd1997"
+ *                     name: "Tech Solutions Inc"
+ *                     phone:
+ *                       extension: "+1"
+ *                       number: "5551234567"
+ *                     createdAt: "2025-12-27T14:24:12.499Z"
+ *                     updatedAt: "2025-12-27T14:24:12.499Z"
+ *                     leads: null
  *
  *       400:
  *         description: Validation error
  *         content:
  *           application/json:
  *             example:
- *               message: "Lead is required"
+ *               message: "Either lead ID or (companyId + leadName) is required"
  *               errorCode: "1001"
  *               error: "validation_error"
  *               data: null
@@ -113,7 +160,7 @@
  *                   data: null
  *
  *       404:
- *         description: Lead not found
+ *         description: Lead or Company not found
  *         content:
  *           application/json:
  *             examples:
@@ -121,6 +168,12 @@
  *                 value:
  *                   message: "Lead not found"
  *                   errorCode: "4201"
+ *                   error: "not_found"
+ *                   data: null
+ *               CompanyNotFound:
+ *                 value:
+ *                   message: "Company not found"
+ *                   errorCode: "4101"
  *                   error: "not_found"
  *                   data: null
  *
@@ -195,8 +248,24 @@
  *               data:
  *                 callLogs:
  *                   - _id: "695021a8533f976683911867"
+ *                     outcome: "interested"
+ *                     followUp: "2025-12-31T00:00:00.000Z"
+ *                     remarks: "positive.. next meeting scheduled"
+ *                     createdAt: "2025-12-27T18:12:56.628Z"
+ *                     updatedAt: "2025-12-27T18:12:56.628Z"
  *                     lead:
  *                       _id: "694fec0d231a3da53bdd19a1"
+ *                       name: "John Smith"
+ *                       phone:
+ *                         extension: "+1"
+ *                         number: "5559876543"
+ *                       email: "john.smith@gmail.com"
+ *                       status: "qualified"
+ *                       source: "referral"
+ *                       followUp: "2025-12-28T14:30:00.000Z"
+ *                       priority: 1
+ *                       createdAt: "2025-12-27T14:24:13.610Z"
+ *                       updatedAt: "2025-12-27T14:24:13.610Z"
  *                       company:
  *                         _id: "694fec0c231a3da53bdd1997"
  *                         name: "Tech Solutions Inc"
@@ -207,26 +276,19 @@
  *                         socialProfile: "https://linkedin.com/company/techsolutions"
  *                         createdAt: "2025-12-27T14:24:12.499Z"
  *                         updatedAt: "2025-12-27T14:24:12.499Z"
- *                       contact:
- *                         _id: "694fec0d231a3da53bdd199e"
- *                         name: "John Smith"
- *                         phone:
- *                           extension: "+1"
- *                           number: "5559876543"
- *                         email: "john.smith@gmail.com"
- *                         createdAt: "2025-12-27T14:24:13.332Z"
- *                         updatedAt: "2025-12-27T14:24:13.332Z"
- *                       status: "qualified"
- *                       source: "referral"
- *                       followUp: "2025-12-28T14:30:00.000Z"
- *                       createdAt: "2025-12-27T14:24:13.610Z"
- *                       updatedAt: "2025-12-27T14:24:13.610Z"
- *                     outcome: "interested"
- *                     followUp: "2025-12-31T00:00:00.000Z"
- *                     remarks: "positive.. next meeting scheduled"
- *                     createdAt: "2025-12-27T18:12:56.628Z"
- *                     updatedAt: "2025-12-27T18:12:56.628Z"
- *
+ *                         leads:
+ *                           - _id: "694fec0d231a3da53bdd19a2"
+ *                             name: "Jane Doe"
+ *                             email: "jane.doe@techsolutions.com"
+ *                             phone:
+ *                               extension: "+1"
+ *                               number: "5551234568"
+ *                             status: "new"
+ *                             source: "website"
+ *                             followUp: "2025-12-28T14:30:00.000Z"
+ *                             priority: 1
+ *                             createdAt: "2025-12-27T14:24:13.610Z"
+ *                             updatedAt: "2025-12-27T14:24:13.610Z"
  *                 info:
  *                   total: 1
  *                   page: 1
@@ -292,10 +354,26 @@
  *               error: "0000"
  *               data:
  *                 _id: "695021a8533f976683911867"
+ *                 outcome: "interested"
+ *                 followUp: "2025-12-31T00:00:00.000Z"
+ *                 remarks: "positive.. next meeting scheduled"
+ *                 createdAt: "2025-12-27T18:12:56.628Z"
+ *                 updatedAt: "2025-12-27T18:12:56.628Z"
  *                 lead:
  *                   _id: "694fec0d231a3da53bdd19a1"
+ *                   name: "John Smith"
+ *                   phone:
+ *                     extension: "+1"
+ *                     number: "5559876543"
+ *                   email: "john.smith@gmail.com"
+ *                   status: "qualified"
+ *                   source: "referral"
+ *                   followUp: "2025-12-28T14:30:00.000Z"
+ *                   priority: 1
+ *                   createdAt: "2025-12-27T14:24:13.610Z"
+ *                   updatedAt: "2025-12-27T14:24:13.610Z"
  *                   company:
- *                     _id: "694fec0c231a3da53bdd1997"
+ *                     _id: "694fec0c231a3da53bdd1617"
  *                     name: "Tech Solutions Inc"
  *                     website: "https://techsolutions.com"
  *                     phone:
@@ -304,25 +382,19 @@
  *                     socialProfile: "https://linkedin.com/company/techsolutions"
  *                     createdAt: "2025-12-27T14:24:12.499Z"
  *                     updatedAt: "2025-12-27T14:24:12.499Z"
- *                   contact:
- *                     _id: "694fec0d231a3da53bdd199e"
- *                     name: "John Smith"
- *                     phone:
- *                       extension: "+1"
- *                       number: "5559876543"
- *                     email: "john.smith@gmail.com"
- *                     createdAt: "2025-12-27T14:24:13.332Z"
- *                     updatedAt: "2025-12-27T14:24:13.332Z"
- *                   status: "qualified"
- *                   source: "referral"
- *                   followUp: "2025-12-28T14:30:00.000Z"
- *                   createdAt: "2025-12-27T14:24:13.610Z"
- *                   updatedAt: "2025-12-27T14:24:13.610Z"
- *                 outcome: "interested"
- *                 followUp: "2025-12-31T00:00:00.000Z"
- *                 remarks: "positive.. next meeting scheduled"
- *                 createdAt: "2025-12-27T18:12:56.628Z"
- *                 updatedAt: "2025-12-27T18:12:56.628Z"
+ *                     leads:
+ *                       - _id: "694fec0d231a3da53bdd19a2"
+ *                         name: "Jane Doe"
+ *                         email: "jane.doe@techsolutions.com"
+ *                         phone:
+ *                           extension: "+1"
+ *                           number: "5551234568"
+ *                         status: "new"
+ *                         source: "website"
+ *                         followUp: "2025-12-28T14:30:00.000Z"
+ *                         priority: 1
+ *                         createdAt: "2025-12-27T14:24:13.610Z"
+ *                         updatedAt: "2025-12-27T14:24:13.610Z"
  *
  *       400:
  *         description: Invalid request parameter
@@ -420,10 +492,26 @@
  *               error: "0000"
  *               data:
  *                 _id: "695021a8533f976683911867"
+ *                 outcome: "done"
+ *                 followUp: "2025-12-31T00:00:00.000Z"
+ *                 remarks: "Completed successfully"
+ *                 createdAt: "2025-12-27T18:12:56.628Z"
+ *                 updatedAt: "2025-12-28T09:15:41.221Z"
  *                 lead:
  *                   _id: "694fec0d231a3da53bdd19a1"
+ *                   name: "John Smith"
+ *                   phone:
+ *                     extension: "+1"
+ *                     number: "5559876543"
+ *                   email: "john.smith@gmail.com"
+ *                   status: "qualified"
+ *                   source: "referral"
+ *                   followUp: "2025-12-28T14:30:00.000Z"
+ *                   priority: 1
+ *                   createdAt: "2025-12-27T14:24:13.610Z"
+ *                   updatedAt: "2025-12-27T14:24:13.610Z"
  *                   company:
- *                     _id: "694fec0c231a3da53bdd1997"
+ *                     _id: "694fec0c231a3da53bdd1984"
  *                     name: "Tech Solutions Inc"
  *                     website: "https://techsolutions.com"
  *                     phone:
@@ -432,25 +520,19 @@
  *                     socialProfile: "https://linkedin.com/company/techsolutions"
  *                     createdAt: "2025-12-27T14:24:12.499Z"
  *                     updatedAt: "2025-12-27T14:24:12.499Z"
- *                   contact:
- *                     _id: "694fec0d231a3da53bdd199e"
- *                     name: "John Smith"
- *                     phone:
- *                       extension: "+1"
- *                       number: "5559876543"
- *                     email: "john.smith@gmail.com"
- *                     createdAt: "2025-12-27T14:24:13.332Z"
- *                     updatedAt: "2025-12-27T14:24:13.332Z"
- *                   status: "qualified"
- *                   source: "referral"
- *                   followUp: "2025-12-28T14:30:00.000Z"
- *                   createdAt: "2025-12-27T14:24:13.610Z"
- *                   updatedAt: "2025-12-27T14:24:13.610Z"
- *                 outcome: "done"
- *                 followUp: "2025-12-31T00:00:00.000Z"
- *                 remarks: "Completed successfully"
- *                 createdAt: "2025-12-27T18:12:56.628Z"
- *                 updatedAt: "2025-12-28T09:15:41.221Z"
+ *                     leads:
+ *                       - _id: "694fec0d231a3da53bdd19a2"
+ *                         name: "Jane Doe"
+ *                         email: "jane.doe@techsolutions.com"
+ *                         phone:
+ *                           extension: "+1"
+ *                           number: "5551234568"
+ *                         status: "new"
+ *                         source: "website"
+ *                         followUp: "2025-12-28T14:30:00.000Z"
+ *                         priority: 1
+ *                         createdAt: "2025-12-27T14:24:13.610Z"
+ *                         updatedAt: "2025-12-27T14:24:13.610Z"
  *
  *       400:
  *         description: Invalid request parameter
@@ -572,6 +654,168 @@
  *               errorCode: "4301"
  *               error: "not_found"
  *               data: null
+ *
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: "Internal Server Error"
+ *               errorCode: "5001"
+ *               error: "internal_server_error"
+ *               data: null
+ */
+
+/**
+ * @swagger
+ * /call-logs/search/company:
+ *   get:
+ *     summary: Search companies
+ *     description: Search companies by name for call log creation
+ *     tags: [Call Logs]
+ *     security:
+ *       - bearerAuth: []
+ *
+ *     parameters:
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search term for company name
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *
+ *     responses:
+ *       200:
+ *         description: Companies fetched successfully
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: "Companies fetched successfully"
+ *               errorCode: null
+ *               error: "0000"
+ *               data:
+ *                 companies:
+ *                   - _id: "694fec0c231a3da53bdd1997"
+ *                     name: "Tech Solutions Inc"
+ *                     website: "https://techsolutions.com"
+ *                     phone:
+ *                       extension: "+1"
+ *                       number: "5551234567"
+ *                     socialProfile: "https://linkedin.com/company/techsolutions"
+ *                     createdAt: "2025-12-27T14:24:12.499Z"
+ *                     updatedAt: "2025-12-27T14:24:12.499Z"
+ *                 info:
+ *                   total: 1
+ *                   page: 1
+ *                   limit: 10
+ *                   totalPages: 1
+ *                   hasMoreRecords: false
+ *
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             examples:
+ *               TokenExpired:
+ *                 value:
+ *                   message: "Session Expired"
+ *                   errorCode: "2003"
+ *                   error: "token_expired"
+ *                   data: null
+ *
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: "Internal Server Error"
+ *               errorCode: "5001"
+ *               error: "internal_server_error"
+ *               data: null
+ */
+
+/**
+ * @swagger
+ * /call-logs/search/leads:
+ *   get:
+ *     summary: Search leads by company
+ *     description: Get all leads for a specific company. Returns null if no leads exist.
+ *     tags: [Call Logs]
+ *     security:
+ *       - bearerAuth: []
+ *
+ *     parameters:
+ *       - in: query
+ *         name: companyId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Company ID to fetch leads for
+ *
+ *     responses:
+ *       200:
+ *         description: Leads fetched successfully (or null if none exist)
+ *         content:
+ *           application/json:
+ *             examples:
+ *               withLeads:
+ *                 summary: Company has leads
+ *                 value:
+ *                   message: "Leads fetched successfully"
+ *                   errorCode: null
+ *                   error: "0000"
+ *                   data:
+ *                     - _id: "694fec0d231a3da53bdd19a1"
+ *                       name: "John Smith"
+ *                       email: "john.smith@gmail.com"
+ *                       phone:
+ *                         extension: "+1"
+ *                         number: "5559876543"
+ *                       company: "694fec0c231a3da53bdd1997"
+ *                       status: "qualified"
+ *                       source: "referral"
+ *                       followUp: "2025-12-28T14:30:00.000Z"
+ *                       priority: 1
+ *                       createdAt: "2025-12-27T14:24:13.610Z"
+ *                       updatedAt: "2025-12-27T14:24:13.610Z"
+ *               noLeads:
+ *                 summary: Company has no leads
+ *                 value:
+ *                   message: "No leads found for this company"
+ *                   errorCode: null
+ *                   error: "0000"
+ *                   data: null
+ *
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: "Company ID is required"
+ *               errorCode: "1001"
+ *               error: "validation_error"
+ *               data: null
+ *
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             examples:
+ *               TokenExpired:
+ *                 value:
+ *                   message: "Session Expired"
+ *                   errorCode: "2003"
+ *                   error: "token_expired"
+ *                   data: null
  *
  *       500:
  *         description: Internal server error

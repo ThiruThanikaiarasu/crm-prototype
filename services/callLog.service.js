@@ -1,12 +1,347 @@
 const { default: mongoose } = require("mongoose")
 const { ERROR_CODES } = require("../constants/error.constant")
 const NotFoundError = require("../errors/NotFoundError")
+const ValidationError = require("../errors/ValidationError")
 const callLogModel = require("../models/callLog.model")
 const leadModel = require("../models/lead.model")
+const companyLeadModel = require("../models/companyLead.model")
+const contactLeadModel = require("../models/contactLead.model")
 
-const createCallLog = async (tenantId, callLog) => {
+/**
+ * Search companies by name
+ */
+const searchCompanies = async (tenantId, { search = '', page = 1, limit = 10 } = {}) => {
+    const CompanyLead = companyLeadModel(tenantId)
+
+    const matchStage = {
+        'deleted.isDeleted': false
+    }
+
+    if (search) {
+        matchStage.name = { $regex: search, $options: 'i' }
+    }
+
+    const skip = (page - 1) * limit
+
+    const result = await CompanyLead.aggregate([
+        { $match: matchStage },
+        {
+            $facet: {
+                data: [
+                    { $sort: { name: 1 } },
+                    { $skip: skip },
+                    { $limit: Number(limit) },
+                    { $project: { deleted: 0 } }
+                ],
+                totalCount: [
+                    { $count: 'count' }
+                ]
+            }
+        }
+    ])
+
+    const companies = result[0].data
+    const total = result[0].totalCount[0]?.count || 0
+    const totalPages = Math.ceil(total / limit)
+
+    return {
+        companies,
+        info: {
+            total,
+            page: Number(page),
+            limit: Number(limit),
+            totalPages,
+            hasMoreRecords: page < totalPages
+        }
+    }
+}
+
+/**
+ * Search leads by company ID
+ */
+const searchLeadsByCompany = async (tenantId, companyId) => {
+    if (!companyId) {
+        throw new ValidationError(400, 'Company ID is required', ERROR_CODES.VALIDATION_ERROR, 'validation_error')
+    }
+
+    const Lead = leadModel(tenantId)
+
+    const leads = await Lead.aggregate([
+        {
+            $match: {
+                company: new mongoose.Types.ObjectId(companyId),
+                'deleted.isDeleted': false
+            }
+        },
+        {
+            $lookup: {
+                from: `${tenantId}_contactleads`,
+                let: { contactId: '$contact' },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $and: [
+                                    { $eq: ['$_id', '$$contactId'] },
+                                    { $eq: ['$deleted.isDeleted', false] }
+                                ]
+                            }
+                        }
+                    },
+                    { $project: { deleted: 0 } }
+                ],
+                as: 'contact'
+            }
+        },
+        {
+            $unwind: {
+                path: '$contact',
+                preserveNullAndEmptyArrays: true
+            }
+        },
+        {
+            $addFields: {
+                name: '$contact.name',
+                email: '$contact.email',
+                phone: '$contact.phone'
+            }
+        },
+        {
+            $project: {
+                deleted: 0,
+                contact: 0
+            }
+        },
+        { $sort: { createdAt: -1 } }
+    ])
+
+    return leads.length > 0 ? leads : null
+}
+
+/**
+ * Create call log - handles both scenarios:
+ * 1. With existing lead ID
+ * 2. Without lead ID but with companyId + leadName (creates lead first)
+ */
+const createCallLog = async (tenantId, payload) => {
     const CallLog = callLogModel(tenantId)
-    return await CallLog.create(callLog)
+    const Lead = leadModel(tenantId)
+    const CompanyLead = companyLeadModel(tenantId)
+    const ContactLead = contactLeadModel(tenantId)
+
+    const { lead, companyId, leadName, outcome, followUp, remarks, owner } = payload
+
+    let leadId = lead
+
+    // Scenario 2: No lead ID, but companyId and leadName provided - create new lead first
+    if (!leadId && companyId && leadName) {
+        // Verify company exists
+        const company = await CompanyLead.findOne({
+            _id: companyId,
+            'deleted.isDeleted': false
+        })
+
+        if (!company) {
+            throw new NotFoundError(404, 'Company not found', ERROR_CODES.COMPANY_NOT_FOUND, 'not_found')
+        }
+
+        // Create contact with just name and company's phone
+        const contact = await ContactLead.create({
+            name: leadName,
+            phone: company.phone || null
+        })
+
+        // Create lead linking to company and contact
+        const newLead = await Lead.create({
+            company: company._id,
+            contact: contact._id,
+            owner: owner
+        })
+
+        leadId = newLead._id
+    }
+
+    // Validate that we have a lead ID at this point
+    if (!leadId) {
+        throw new ValidationError(
+            400,
+            'Either lead ID or (companyId + leadName) is required',
+            ERROR_CODES.VALIDATION_ERROR,
+            'validation_error'
+        )
+    }
+
+    // Verify lead exists
+    const existingLead = await Lead.findOne({
+        _id: leadId,
+        'deleted.isDeleted': false
+    })
+
+    if (!existingLead) {
+        throw new NotFoundError(404, 'Lead not found', ERROR_CODES.LEAD_NOT_FOUND, 'not_found')
+    }
+
+    // Create call log
+    const callLog = await CallLog.create({
+        lead: leadId,
+        outcome,
+        followUp,
+        remarks,
+        owner
+    })
+
+    // Return call log with full details using aggregation
+    const result = await CallLog.aggregate([
+        {
+            $match: {
+                _id: callLog._id
+            }
+        },
+        {
+            $lookup: {
+                from: `${tenantId}_leads`,
+                localField: 'lead',
+                foreignField: '_id',
+                as: 'lead'
+            }
+        },
+        { $unwind: '$lead' },
+        {
+            $lookup: {
+                from: `${tenantId}_companyleads`,
+                let: { companyId: '$lead.company' },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $and: [
+                                    { $eq: ['$_id', '$$companyId'] },
+                                    { $eq: ['$deleted.isDeleted', false] }
+                                ]
+                            }
+                        }
+                    },
+                    { $project: { deleted: 0 } }
+                ],
+                as: 'lead.company'
+            }
+        },
+        {
+            $unwind: {
+                path: '$lead.company',
+                preserveNullAndEmptyArrays: true
+            }
+        },
+        {
+            $lookup: {
+                from: `${tenantId}_contactleads`,
+                let: { contactId: '$lead.contact' },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $and: [
+                                    { $eq: ['$_id', '$$contactId'] },
+                                    { $eq: ['$deleted.isDeleted', false] }
+                                ]
+                            }
+                        }
+                    },
+                    { $project: { deleted: 0 } }
+                ],
+                as: 'lead.contact'
+            }
+        },
+        {
+            $unwind: {
+                path: '$lead.contact',
+                preserveNullAndEmptyArrays: true
+            }
+        },
+        {
+            $lookup: {
+                from: `${tenantId}_leads`,
+                let: { companyId: '$lead.company._id', currentLeadId: '$lead._id' },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $and: [
+                                    { $eq: ['$company', '$$companyId'] },
+                                    { $eq: ['$deleted.isDeleted', false] },
+                                    { $ne: ['$_id', '$$currentLeadId'] }
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: `${tenantId}_contactleads`,
+                            let: { contactId: '$contact' },
+                            pipeline: [
+                                {
+                                    $match: {
+                                        $expr: {
+                                            $and: [
+                                                { $eq: ['$_id', '$$contactId'] },
+                                                { $eq: ['$deleted.isDeleted', false] }
+                                            ]
+                                        }
+                                    }
+                                },
+                                { $project: { deleted: 0 } }
+                            ],
+                            as: 'contact'
+                        }
+                    },
+                    {
+                        $unwind: {
+                            path: '$contact',
+                            preserveNullAndEmptyArrays: true
+                        }
+                    },
+                    {
+                        $addFields: {
+                            name: '$contact.name',
+                            email: '$contact.email',
+                            phone: '$contact.phone'
+                        }
+                    },
+                    {
+                        $project: {
+                            deleted: 0,
+                            contact: 0
+                        }
+                    },
+                    { $sort: { createdAt: -1 } }
+                ],
+                as: 'lead.company.leads'
+            }
+        },
+        {
+            $addFields: {
+                'lead.company.leads': {
+                    $cond: {
+                        if: { $eq: [{ $size: '$lead.company.leads' }, 0] },
+                        then: null,
+                        else: '$lead.company.leads'
+                    }
+                },
+                'lead.name': '$lead.contact.name',
+                'lead.email': '$lead.contact.email',
+                'lead.phone': '$lead.contact.phone'
+            }
+        },
+        {
+            $project: {
+                deleted: 0,
+                'lead.deleted': 0,
+                'lead.contact': 0
+            }
+        }
+    ])
+
+    return result[0] || null
 }
 
 const getAllCallLogs = async (
@@ -123,9 +458,84 @@ const getAllCallLogs = async (
         },
 
         {
+            $lookup: {
+                from: `${tenantId}_leads`,
+                let: { companyId: '$lead.company._id', currentLeadId: '$lead._id' },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $and: [
+                                    { $eq: ['$company', '$$companyId'] },
+                                    { $eq: ['$deleted.isDeleted', false] },
+                                    { $ne: ['$_id', '$$currentLeadId'] }
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: `${tenantId}_contactleads`,
+                            let: { contactId: '$contact' },
+                            pipeline: [
+                                {
+                                    $match: {
+                                        $expr: {
+                                            $and: [
+                                                { $eq: ['$_id', '$$contactId'] },
+                                                { $eq: ['$deleted.isDeleted', false] }
+                                            ]
+                                        }
+                                    }
+                                },
+                                { $project: { deleted: 0 } }
+                            ],
+                            as: 'contact'
+                        }
+                    },
+                    {
+                        $unwind: {
+                            path: '$contact',
+                            preserveNullAndEmptyArrays: true
+                        }
+                    },
+                    {
+                        $addFields: {
+                            name: '$contact.name',
+                            email: '$contact.email',
+                            phone: '$contact.phone'
+                        }
+                    },
+                    {
+                        $project: {
+                            deleted: 0,
+                            contact: 0
+                        }
+                    },
+                    { $sort: { createdAt: -1 } }
+                ],
+                as: 'lead.company.leads'
+            }
+        },
+        {
+            $addFields: {
+                'lead.company.leads': {
+                    $cond: {
+                        if: { $eq: [{ $size: '$lead.company.leads' }, 0] },
+                        then: null,
+                        else: '$lead.company.leads'
+                    }
+                },
+                'lead.name': '$lead.contact.name',
+                'lead.email': '$lead.contact.email',
+                'lead.phone': '$lead.contact.phone'
+            }
+        },
+        {
             $project: {
                 deleted: 0,
-                'lead.deleted': 0
+                'lead.deleted': 0,
+                'lead.contact': 0
             }
         },
 
@@ -231,9 +641,84 @@ const getCallLogById = async (tenantId, id) => {
             }
         },
         {
+            $lookup: {
+                from: `${tenantId}_leads`,
+                let: { companyId: '$lead.company._id', currentLeadId: '$lead._id' },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $and: [
+                                    { $eq: ['$company', '$$companyId'] },
+                                    { $eq: ['$deleted.isDeleted', false] },
+                                    { $ne: ['$_id', '$$currentLeadId'] }
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: `${tenantId}_contactleads`,
+                            let: { contactId: '$contact' },
+                            pipeline: [
+                                {
+                                    $match: {
+                                        $expr: {
+                                            $and: [
+                                                { $eq: ['$_id', '$$contactId'] },
+                                                { $eq: ['$deleted.isDeleted', false] }
+                                            ]
+                                        }
+                                    }
+                                },
+                                { $project: { deleted: 0 } }
+                            ],
+                            as: 'contact'
+                        }
+                    },
+                    {
+                        $unwind: {
+                            path: '$contact',
+                            preserveNullAndEmptyArrays: true
+                        }
+                    },
+                    {
+                        $addFields: {
+                            name: '$contact.name',
+                            email: '$contact.email',
+                            phone: '$contact.phone'
+                        }
+                    },
+                    {
+                        $project: {
+                            deleted: 0,
+                            contact: 0
+                        }
+                    },
+                    { $sort: { createdAt: -1 } }
+                ],
+                as: 'lead.company.leads'
+            }
+        },
+        {
+            $addFields: {
+                'lead.company.leads': {
+                    $cond: {
+                        if: { $eq: [{ $size: '$lead.company.leads' }, 0] },
+                        then: null,
+                        else: '$lead.company.leads'
+                    }
+                },
+                'lead.name': '$lead.contact.name',
+                'lead.email': '$lead.contact.email',
+                'lead.phone': '$lead.contact.phone'
+            }
+        },
+        {
             $project: {
                 deleted: 0,
-                'lead.deleted': 0
+                'lead.deleted': 0,
+                'lead.contact': 0
             }
         }
     ])
@@ -334,9 +819,84 @@ const updateCallLog = async (tenantId, id, payload) => {
             }
         },
         {
+            $lookup: {
+                from: `${tenantId}_leads`,
+                let: { companyId: '$lead.company._id', currentLeadId: '$lead._id' },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $and: [
+                                    { $eq: ['$company', '$$companyId'] },
+                                    { $eq: ['$deleted.isDeleted', false] },
+                                    { $ne: ['$_id', '$$currentLeadId'] }
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: `${tenantId}_contactleads`,
+                            let: { contactId: '$contact' },
+                            pipeline: [
+                                {
+                                    $match: {
+                                        $expr: {
+                                            $and: [
+                                                { $eq: ['$_id', '$$contactId'] },
+                                                { $eq: ['$deleted.isDeleted', false] }
+                                            ]
+                                        }
+                                    }
+                                },
+                                { $project: { deleted: 0 } }
+                            ],
+                            as: 'contact'
+                        }
+                    },
+                    {
+                        $unwind: {
+                            path: '$contact',
+                            preserveNullAndEmptyArrays: true
+                        }
+                    },
+                    {
+                        $addFields: {
+                            name: '$contact.name',
+                            email: '$contact.email',
+                            phone: '$contact.phone'
+                        }
+                    },
+                    {
+                        $project: {
+                            deleted: 0,
+                            contact: 0
+                        }
+                    },
+                    { $sort: { createdAt: -1 } }
+                ],
+                as: 'lead.company.leads'
+            }
+        },
+        {
+            $addFields: {
+                'lead.company.leads': {
+                    $cond: {
+                        if: { $eq: [{ $size: '$lead.company.leads' }, 0] },
+                        then: null,
+                        else: '$lead.company.leads'
+                    }
+                },
+                'lead.name': '$lead.contact.name',
+                'lead.email': '$lead.contact.email',
+                'lead.phone': '$lead.contact.phone'
+            }
+        },
+        {
             $project: {
                 deleted: 0,
-                'lead.deleted': 0
+                'lead.deleted': 0,
+                'lead.contact': 0
             }
         }
     ])
@@ -366,4 +926,6 @@ module.exports = {
     getCallLogById,
     updateCallLog,
     deleteCallLogById,
+    searchCompanies,
+    searchLeadsByCompany,
 }
