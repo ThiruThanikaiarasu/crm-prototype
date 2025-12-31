@@ -129,7 +129,17 @@ const createCallLog = async (tenantId, payload) => {
     const CompanyLead = companyLeadModel(tenantId)
     const ContactLead = contactLeadModel(tenantId)
 
-    const { lead, companyId, leadName, outcome, followUp, remarks, owner } = payload
+    const {
+        lead,
+        companyId,
+        leadName,
+        outcome,
+        followUp,
+        remarks,
+        callStartTime,
+        callDuration,
+        owner
+    } = payload
 
     let leadId = lead
 
@@ -181,12 +191,43 @@ const createCallLog = async (tenantId, payload) => {
         throw new NotFoundError(404, 'Lead not found', ERROR_CODES.LEAD_NOT_FOUND, 'not_found')
     }
 
-    // Create call log
+    // Validate required fields
+    if (!callStartTime) {
+        throw new ValidationError(
+            400,
+            'Call start time is required',
+            ERROR_CODES.VALIDATION_ERROR,
+            'validation_error'
+        )
+    }
+
+    if (callDuration === undefined || callDuration === null) {
+        throw new ValidationError(
+            400,
+            'Call duration is required',
+            ERROR_CODES.VALIDATION_ERROR,
+            'validation_error'
+        )
+    }
+
+    // Validate callDuration
+    if (typeof callDuration !== 'number' || callDuration < 0) {
+        throw new ValidationError(
+            400,
+            'Call duration must be a non-negative number',
+            ERROR_CODES.VALIDATION_ERROR,
+            'validation_error'
+        )
+    }
+
+    // Create call log with all required fields
     const callLog = await CallLog.create({
         lead: leadId,
         outcome,
         followUp,
         remarks,
+        callStartTime,
+        callDuration,
         owner
     })
 
@@ -344,6 +385,9 @@ const createCallLog = async (tenantId, payload) => {
     return result[0] || null
 }
 
+/**
+ * Get all call logs with filtering and pagination
+ */
 const getAllCallLogs = async (
     tenantId,
     {
@@ -372,7 +416,7 @@ const getAllCallLogs = async (
     }
 
     if (remarks) {
-        matchStage.remarks = remarks
+        matchStage.remarks = { $regex: remarks, $options: 'i' }
     }
 
     if (followUp) {
@@ -569,6 +613,9 @@ const getAllCallLogs = async (
     }
 }
 
+/**
+ * Get call log by ID
+ */
 const getCallLogById = async (tenantId, id) => {
     const CallLog = callLogModel(tenantId)
 
@@ -726,6 +773,9 @@ const getCallLogById = async (tenantId, id) => {
     return result[0] || null
 }
 
+/**
+ * Update call log by ID
+ */
 const updateCallLog = async (tenantId, id, payload) => {
     const CallLog = callLogModel(tenantId)
 
@@ -743,14 +793,30 @@ const updateCallLog = async (tenantId, id, payload) => {
         )
     }
 
-    Object.keys(payload).forEach(key => {
-        if (key !== 'lead' && payload[key] !== undefined) {
-            callLog[key] = payload[key]
+    // Validate callDuration if being updated
+    if (payload.callDuration !== undefined && payload.callDuration !== null) {
+        if (typeof payload.callDuration !== 'number' || payload.callDuration < 0) {
+            throw new ValidationError(
+                400,
+                'Call duration must be a non-negative number',
+                ERROR_CODES.VALIDATION_ERROR,
+                'validation_error'
+            )
+        }
+    }
+
+    // Update allowed fields
+    const allowedFields = ['outcome', 'followUp', 'remarks', 'callStartTime', 'callDuration']
+
+    allowedFields.forEach(field => {
+        if (payload[field] !== undefined) {
+            callLog[field] = payload[field]
         }
     })
 
     await callLog.save()
 
+    // Return updated call log with full details
     const result = await CallLog.aggregate([
         {
             $match: {
@@ -904,6 +970,9 @@ const updateCallLog = async (tenantId, id, payload) => {
     return result[0] || null
 }
 
+/**
+ * Soft delete call log by ID
+ */
 const deleteCallLogById = async (tenantId, userId, id) => {
     const CallLog = callLogModel(tenantId)
     const callLog = await CallLog.findById(id)

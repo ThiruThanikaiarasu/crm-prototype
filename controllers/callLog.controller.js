@@ -26,7 +26,9 @@ const create = async (request, response) => {
             leadName,
             outcome,
             followUp,
-            remarks
+            remarks,
+            callStartTime,
+            callDuration
         } = request.body
 
         const { tenantId, userId } = request.user
@@ -38,6 +40,8 @@ const create = async (request, response) => {
             outcome,
             followUp,
             remarks,
+            callStartTime,
+            callDuration,
             owner: userId,
         })
 

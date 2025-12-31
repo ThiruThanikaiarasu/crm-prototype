@@ -22,6 +22,15 @@
  *         remarks:
  *           type: string
  *           example: "Client asked for a follow-up call"
+ *         callStartTime:
+ *           type: string
+ *           format: date-time
+ *           description: When the call started
+ *           example: "2025-02-01T08:00:00.000Z"
+ *         callDuration:
+ *           type: integer
+ *           description: Duration of the call in seconds
+ *           example: 300
  *         createdAt:
  *           type: string
  *           format: date-time
@@ -37,10 +46,6 @@
  * /call-logs:
  *   post:
  *     summary: Create a call log
- *     description: |
- *       Create a call log with either:
- *       - An existing lead ID, OR
- *       - A companyId + leadName (will create a new lead with the company's phone)
  *     tags: [Call Logs]
  *     security:
  *       - bearerAuth: []
@@ -51,20 +56,15 @@
  *         application/json:
  *           schema:
  *             type: object
- *             required: [followUp, remarks]
+ *             required:
+ *               - lead
+ *               - followUp
+ *               - remarks
  *             properties:
  *               lead:
  *                 type: string
- *                 description: Existing lead ID (optional if companyId + leadName provided)
- *                 example: "65c1f3a2e9a34c0012ab9999"
- *               companyId:
- *                 type: string
- *                 description: Company ID (required if lead not provided)
- *                 example: "65c1f3a2e9a34c0012ab1111"
- *               leadName:
- *                 type: string
- *                 description: Name for new lead (required if lead not provided)
- *                 example: "John Doe"
+ *                 description: Existing lead ID
+ *                 example: "6955641a87fdbdffbd0f66bf"
  *               outcome:
  *                 type: string
  *                 enum: [interested, not_interested, contacted, done]
@@ -72,26 +72,19 @@
  *               followUp:
  *                 type: string
  *                 format: date-time
- *                 example: "2025-02-10T10:30:00.000Z"
+ *                 example: "2025-12-31T00:00:00.000Z"
  *               remarks:
  *                 type: string
  *                 example: "Customer requested follow-up"
- *           examples:
- *             withExistingLead:
- *               summary: With existing lead ID
- *               value:
- *                 lead: "65c1f3a2e9a34c0012ab9999"
- *                 outcome: "contacted"
- *                 followUp: "2025-02-10T10:30:00.000Z"
- *                 remarks: "Customer requested follow-up"
- *             withNewLead:
- *               summary: Create new lead
- *               value:
- *                 companyId: "65c1f3a2e9a34c0012ab1111"
- *                 leadName: "John Doe"
- *                 outcome: "interested"
- *                 followUp: "2025-02-10T10:30:00.000Z"
- *                 remarks: "New contact from company"
+ *               callStartTime:
+ *                 type: string
+ *                 format: date-time
+ *                 description: When the call started
+ *                 example: "2025-12-31T10:00:00.000Z"
+ *               callDuration:
+ *                 type: integer
+ *                 description: Duration of the call in seconds
+ *                 example: 300
  *
  *     responses:
  *       201:
@@ -100,47 +93,51 @@
  *           application/json:
  *             example:
  *               message: "Call log created successfully"
- *               errorCode: null
- *               error: "0301"
+ *               errorCode: "0301"
+ *               error: null
  *               data:
  *                 _id: "695021a8533f976683911867"
  *                 outcome: "contacted"
- *                 followUp: "2025-02-10T10:30:00.000Z"
+ *                 followUp: "2025-12-31T00:00:00.000Z"
  *                 remarks: "Customer requested follow-up"
- *                 createdAt: "2025-12-27T18:12:56.628Z"
- *                 updatedAt: "2025-12-27T18:12:56.628Z"
+ *                 callStartTime: "2025-12-31T10:00:00.000Z"
+ *                 callDuration: 300
+ *                 createdAt: "2025-12-31T18:12:56.628Z"
+ *                 updatedAt: "2025-12-31T18:12:56.628Z"
  *                 lead:
- *                   _id: "694fec0d231a3da53bdd19a1"
- *                   name: "John Doe"
+ *                   _id: "6955641a87fdbdffbd0f66bf"
+ *                   name: "John"
+ *                   email: "john@gmail.com"
  *                   phone:
  *                     extension: "+1"
- *                     number: "5559876543"
- *                   email: "john.doe@example.com"
- *                   status: null
- *                   source: null
- *                   followUp: null
+ *                     number: "5559876546"
+ *                   status: "qualified"
+ *                   source: "website"
+ *                   followUp: "2025-12-28T14:30:00.000Z"
  *                   priority: 1
- *                   createdAt: "2025-12-27T14:24:13.610Z"
- *                   updatedAt: "2025-12-27T14:24:13.610Z"
+ *                   createdAt: "2025-12-31T17:57:46.816Z"
+ *                   updatedAt: "2025-12-31T17:57:46.816Z"
  *                   company:
- *                     _id: "694fec0c231a3da53bdd1997"
- *                     name: "Tech Solutions Inc"
+ *                     _id: "6955641887fdbdffbd0f66b6"
+ *                     name: "Tech M"
+ *                     website: "https://techsolutions.com"
  *                     phone:
  *                       extension: "+1"
- *                       number: "5551234567"
- *                     createdAt: "2025-12-27T14:24:12.499Z"
- *                     updatedAt: "2025-12-27T14:24:12.499Z"
- *                     leads: null
+ *                       number: "5551234568"
+ *                     socialProfile: "https://linkedin.com/company/techsolutions"
+ *                     createdAt: "2025-12-31T17:57:44.965Z"
+ *                     updatedAt: "2025-12-31T17:57:44.965Z"
  *
  *       400:
  *         description: Validation error
  *         content:
  *           application/json:
  *             example:
- *               message: "Either lead ID or (companyId + leadName) is required"
+ *               message: "Lead is required"
  *               errorCode: "1001"
  *               error: "validation_error"
  *               data: null
+ *
  *       401:
  *         description: Unauthorized
  *         content:
@@ -160,22 +157,14 @@
  *                   data: null
  *
  *       404:
- *         description: Lead or Company not found
+ *         description: Lead not found
  *         content:
  *           application/json:
- *             examples:
- *               LeadNotFound:
- *                 value:
- *                   message: "Lead not found"
- *                   errorCode: "4201"
- *                   error: "not_found"
- *                   data: null
- *               CompanyNotFound:
- *                 value:
- *                   message: "Company not found"
- *                   errorCode: "4101"
- *                   error: "not_found"
- *                   data: null
+ *             example:
+ *               message: "Lead not found"
+ *               errorCode: "4201"
+ *               error: "not_found"
+ *               data: null
  *
  *       500:
  *         description: Internal server error

@@ -48,6 +48,18 @@ const validateCreateCallLogPayload = [
         .withMessage('Remarks must be a string')
         .isLength({ min: 2, max: 500 })
         .withMessage('Remarks must be between 2 and 500 characters'),
+
+    body('callStartTime')
+        .notEmpty()
+        .withMessage('Call start time is required')
+        .isISO8601()
+        .withMessage('Call start time must be a valid date'),
+
+    body('callDuration')
+        .notEmpty()
+        .withMessage('Call duration is required')
+        .isInt({ min: 0 })
+        .withMessage('Call duration must be a non-negative integer (seconds)'),
 ]
 
 module.exports = {

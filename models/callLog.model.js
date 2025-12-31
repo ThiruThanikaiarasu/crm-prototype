@@ -21,6 +21,15 @@ const createCallLogSchema = (tenantId) => {
                 type: String,
                 required: [true, 'Remarks is required']
             },
+            callStartTime: {
+                type: Date,
+                required: [true, 'Call start time is required']
+            },
+            callDuration: {
+                type: Number,
+                min: [0, 'Call duration cannot be negative'],
+                required: [true, 'Call duration is required']
+            },
             deleted: {
                 isDeleted: {
                     type: Boolean,
@@ -51,8 +60,8 @@ const createCallLogSchema = (tenantId) => {
         { collation: { locale: 'ar', strength: 1 } }
     )
 
-    callLogSchema.pre(/^find/, function() {
-        this.where({'deleted.isDeleted': false})
+    callLogSchema.pre(/^find/, function () {
+        this.where({ 'deleted.isDeleted': false })
     })
 
     return callLogSchema
