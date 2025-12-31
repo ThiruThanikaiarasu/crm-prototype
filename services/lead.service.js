@@ -101,7 +101,7 @@ const createLead = async (payload, tenantId, userId) => {
             }
 
             const contactsToInsert = leadsPayload.map(leadData => {
-                const { status, source, followUp, ...contactInfo } = leadData
+                const { status, source, followUp, priority, ...contactInfo } = leadData
                 return contactInfo
             })
 
@@ -117,7 +117,10 @@ const createLead = async (payload, tenantId, userId) => {
                     contact: contactLead._id,
                     status: originalLead.status || null,
                     source: originalLead.source || null,
+                    status: originalLead.status || null,
+                    source: originalLead.source || null,
                     followUp: originalLead.followUp || null,
+                    priority: originalLead.priority || 1,
                     userId
                 }
             })
@@ -141,6 +144,7 @@ const createLead = async (payload, tenantId, userId) => {
                     status: lead.status,
                     source: lead.source,
                     followUp: lead.followUp,
+                    priority: lead.priority,
                     createdAt: lead.createdAt,
                     updatedAt: lead.updatedAt
                 }
@@ -159,6 +163,7 @@ const createLead = async (payload, tenantId, userId) => {
                     status: 'new',
                     source: null,
                     followUp: null,
+                    priority: 1,
                     userId
                 }],
                 { session }
@@ -178,6 +183,7 @@ const createLead = async (payload, tenantId, userId) => {
                     status: insertedLead.status,
                     source: insertedLead.source,
                     followUp: insertedLead.followUp,
+                    priority: insertedLead.priority,
                     createdAt: insertedLead.createdAt,
                     updatedAt: insertedLead.updatedAt
                 }]
@@ -206,6 +212,7 @@ const getAllLeads = async (
         sort = 'createdAt',
         order = 'desc',
         followUp,
+        priority,
     } = {}
 ) => {
     const Lead = leadModel(tenantId)
@@ -238,6 +245,10 @@ const getAllLeads = async (
             $gte: startOfDay,
             $lte: endOfDay
         }
+    }
+
+    if (priority) {
+        matchConditions.priority = Number(priority)
     }
 
     const pipeline = [
@@ -624,7 +635,7 @@ const updateLeadById = async (tenantId, id, payload) => {
             )
         }
 
-        const { company, name, email, phone, status, source, followUp } = payload
+        const { company, name, email, phone, status, source, followUp, priority } = payload
 
         if (company && Object.keys(company).length > 0) {
             const companyUpdateData = {}
@@ -676,6 +687,7 @@ const updateLeadById = async (tenantId, id, payload) => {
         if (status !== undefined) lead.status = status
         if (source !== undefined) lead.source = source
         if (followUp !== undefined) lead.followUp = followUp
+        if (priority !== undefined) lead.priority = priority
 
         await lead.save({ session })
 

@@ -79,6 +79,9 @@
  *                       type: string
  *                       format: date-time
  *                       example: "2025-12-28T14:30:00.000Z"
+ *                     priority:
+ *                       type: integer
+ *                       example: 0
  *
  *     responses:
  *       201:
@@ -111,6 +114,7 @@
  *                     status: "qualified"
  *                     source: "referral"
  *                     followUp: "2025-12-28T14:30:00.000Z"
+ *                     priority: 0
  *                     createdAt: "2025-12-19T08:55:36.946Z"
  *                     updatedAt: "2025-12-19T08:55:36.946Z"
  *
@@ -241,6 +245,7 @@
  *                         status: "qualified"
  *                         source: "referral"
  *                         followUp: "2025-12-28T14:30:00.000Z"
+ *                         priority: 1
  *                         createdAt: "2025-12-27T14:24:13.610Z"
  *                         updatedAt: "2025-12-27T14:24:13.610Z"
  *
@@ -254,6 +259,7 @@
  *                         status: "new"
  *                         source: "website"
  *                         followUp: "2025-12-30T20:00:00.000Z"
+ *                         priority: 2
  *                         createdAt: "2025-12-27T14:24:13.611Z"
  *                         updatedAt: "2025-12-28T20:05:27.230Z"
  *
@@ -330,6 +336,7 @@
  *                 status: "contacted"
  *                 source: "cold_call"
  *                 followUp: "2025-12-29T16:30:00.000Z"
+ *                 priority: 1
  *                 createdAt: "2025-12-27T14:12:44.093Z"
  *                 updatedAt: "2025-12-27T17:40:39.471Z"
  *
@@ -471,6 +478,7 @@
  *                 status: "qualified"
  *                 source: "Website"
  *                 followUp: "2025-12-29T16:30:00.000Z"
+ *                 priority: 1
  *                 createdAt: "2025-12-27T14:12:44.093Z"
  *                 updatedAt: "2025-12-27T17:40:39.471Z"
  *
@@ -496,6 +504,7 @@
  *                       status: "contacted"
  *                       source: "linkedIn"
  *                       followUp: "2026-01-16T00:00:00.000Z"
+ *                       priority: 1
  *                       createdAt: "2025-12-27T14:12:44.093Z"
  *                       updatedAt: "2025-12-27T14:12:44.093Z"
  *

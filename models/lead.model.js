@@ -28,6 +28,11 @@ const createLeadSchema = (tenantId) => {
             followUp: {
                 type: Date,
             },
+            priority: {
+                type: Number,
+                min: [1, 'Priority must be at least 1'],
+                default: 0,
+            },
             owner: {
                 type: mongoose.Schema.Types.ObjectId,
                 ref: `${tenantId}_users`,
@@ -61,8 +66,8 @@ const createLeadSchema = (tenantId) => {
         { collation: { locale: 'ar', strength: 1 } }
     )
 
-    leadSchema.pre(/^find/, function() {
-        this.where({'deleted.isDeleted': false})
+    leadSchema.pre(/^find/, function () {
+        this.where({ 'deleted.isDeleted': false })
     })
 
     return leadSchema

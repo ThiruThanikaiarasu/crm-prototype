@@ -75,6 +75,11 @@ const validateCreateANewLeadLeadPayload = [
         .optional({ nullable: true })
         .isISO8601()
         .withMessage('Follow up must be a valid date'),
+
+    body('leads.*.priority')
+        .optional({ nullable: true })
+        .isInt({ min: 1 })
+        .withMessage('Priority must be a number greater than or equal to 1'),
 ]
 
 
