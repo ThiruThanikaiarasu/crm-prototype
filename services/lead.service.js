@@ -12,7 +12,7 @@ const createLead = async (payload, tenantId, userId) => {
     try {
         session.startTransaction()
 
-        const { company, contacts } = payload
+        const { company, leads } = payload
 
         const CompanyLead = companyLeadModel(tenantId)
         const ContactLead = contactLeadModel(tenantId)
@@ -58,29 +58,32 @@ const createLead = async (payload, tenantId, userId) => {
             { session }
         )
 
-        const contactsPayload = Array.isArray(contacts) ? contacts : []
+        const leadsPayload = Array.isArray(leads) ? leads : []
 
-        let sanitizedLeads = []
+        let response = {
+            company: null,
+            leads: []
+        }
 
-        if (contactsPayload.length > 0) {
-            for (const contact of contactsPayload) {
+        if (leadsPayload.length > 0) {
+            for (const leadData of leadsPayload) {
                 const contactQuery = {
                     'deleted.isDeleted': false,
                     $or: []
                 }
 
-                if (contact?.email) {
+                if (leadData?.email) {
                     contactQuery.$or.push({
                         email: {
-                            $regex: `^${escapeRegex(contact.email)}$`,
+                            $regex: `^${escapeRegex(leadData.email)}$`,
                             $options: 'i'
                         }
                     })
                 }
 
-                if (contact?.phone?.number) {
+                if (leadData?.phone?.number) {
                     contactQuery.$or.push({
-                        'phone.number': contact.phone.number
+                        'phone.number': leadData.phone.number
                     })
                 }
 
@@ -89,17 +92,17 @@ const createLead = async (payload, tenantId, userId) => {
                     if (existingContact) {
                         throw new ConflictError(
                             409,
-                            'Contact already exists',
-                            ERROR_CODES.CONTACT_ALREADY_EXISTS,
+                            'Lead already exists',
+                            ERROR_CODES.LEAD_ALREADY_EXISTS,
                             'conflict'
                         )
                     }
                 }
             }
 
-            const contactsToInsert = contactsPayload.map(contact => {
-                const { status, source, followUp, ...contactData } = contact
-                return contactData
+            const contactsToInsert = leadsPayload.map(leadData => {
+                const { status, source, followUp, ...contactInfo } = leadData
+                return contactInfo
             })
 
             const contactLeads = await ContactLead.insertMany(
@@ -107,54 +110,53 @@ const createLead = async (payload, tenantId, userId) => {
                 { session }
             )
 
-            const leads = contactLeads.map((contactLead, index) => {
-                const originalContact = contactsPayload[index]
+            const leadsToInsert = contactLeads.map((contactLead, index) => {
+                const originalLead = leadsPayload[index]
                 return {
                     company: companyLead._id,
                     contact: contactLead._id,
-                    status: originalContact.status || null,
-                    source: originalContact.source || null,
-                    followUp: originalContact.followUp || null,
+                    status: originalLead.status || null,
+                    source: originalLead.source || null,
+                    followUp: originalLead.followUp || null,
                     userId
                 }
             })
 
-            const insertedLeads = await Lead.insertMany(
-                leads,
-                { session }
-            )
-
-            const contactMap = new Map(
-                contactLeads.map(c => [c._id.toString(), c])
+            const insertedLeads = await Lead.create(
+                leadsToInsert,
+                { session, ordered: true }
             )
 
             const companyObj = companyLead.toObject()
             delete companyObj.deleted
 
-            sanitizedLeads = insertedLeads.map(lead => {
-                const contactObj = contactMap
-                    .get(lead.contact.toString())
-                    ?.toObject()
-
-                delete contactObj?.deleted
-
+            const formattedLeads = insertedLeads.map((lead, index) => {
+                const contactInfo = contactLeads[index].toObject()
                 return {
                     _id: lead._id,
-                    company: companyObj,
-                    contact: contactObj,
+                    company: companyLead._id,
+                    name: contactInfo.name,
+                    email: contactInfo.email,
+                    phone: contactInfo.phone,
                     status: lead.status,
                     source: lead.source,
                     followUp: lead.followUp,
-                    userId: lead.userId,
                     createdAt: lead.createdAt,
                     updatedAt: lead.updatedAt
                 }
             })
+
+            response = {
+                company: companyObj,
+                leads: formattedLeads
+            }
+
         } else {
             const [insertedLead] = await Lead.create(
                 [{
                     company: companyLead._id,
                     contact: null,
+                    status: 'new',
                     source: null,
                     followUp: null,
                     userId
@@ -165,21 +167,25 @@ const createLead = async (payload, tenantId, userId) => {
             const companyObj = companyLead.toObject()
             delete companyObj.deleted
 
-            sanitizedLeads = [{
-                _id: insertedLead._id,
+            response = {
                 company: companyObj,
-                contact: null,
-                status: insertedLead.status,
-                source: insertedLead.source,
-                followUp: insertedLead.followUp,
-                userId: insertedLead.userId,
-                createdAt: insertedLead.createdAt,
-                updatedAt: insertedLead.updatedAt
-            }]
+                leads: [{
+                    _id: insertedLead._id,
+                    company: companyLead._id,
+                    name: null,
+                    email: null,
+                    phone: null,
+                    status: insertedLead.status,
+                    source: insertedLead.source,
+                    followUp: insertedLead.followUp,
+                    createdAt: insertedLead.createdAt,
+                    updatedAt: insertedLead.updatedAt
+                }]
+            }
         }
 
         await session.commitTransaction()
-        return sanitizedLeads
+        return response
     } catch (error) {
         await session.abortTransaction()
         throw error
@@ -252,19 +258,12 @@ const getAllLeads = async (
                                 ]
                             }
                         }
-                    },
-                    {
-                        $project: {
-                            deleted: 0
-                        }
                     }
                 ],
                 as: 'company'
             }
         },
-        {
-            $unwind: '$company'
-        },
+        { $unwind: '$company' },
         {
             $lookup: {
                 from: `${tenantId}_contactleads`,
@@ -279,11 +278,6 @@ const getAllLeads = async (
                                 ]
                             }
                         }
-                    },
-                    {
-                        $project: {
-                            deleted: 0
-                        }
                     }
                 ],
                 as: 'contact'
@@ -294,32 +288,33 @@ const getAllLeads = async (
                 path: '$contact',
                 preserveNullAndEmptyArrays: true
             }
-        },
-        {
-            $project: {
-                deleted: 0
-            }
         }
     ]
 
     const postLookupMatch = {}
-
     if (company) {
         postLookupMatch['company.name'] = { $regex: company, $options: 'i' }
     }
-
     if (contact) {
         postLookupMatch['contact.name'] = { $regex: contact, $options: 'i' }
     }
-
     if (Object.keys(postLookupMatch).length > 0) {
         pipeline.push({
             $match: postLookupMatch
         })
     }
 
-    const allowedSortFields = ['createdAt', 'updatedAt', 'status', 'source', 'followUp']
-    const sortField = allowedSortFields.includes(sort) ? sort : 'createdAt'
+    pipeline.push({
+        $group: {
+            _id: '$company._id',
+            companyDetails: { $first: '$company' },
+            matchedLeadsCount: { $sum: 1 },
+            maxCreatedAt: { $max: '$createdAt' }
+        }
+    })
+
+    const allowedSortFields = ['createdAt', 'matchedLeadsCount']
+    const sortField = sort === 'createdAt' ? 'maxCreatedAt' : 'matchedLeadsCount' // Simplified sort strategy
     const sortOrder = order === 'asc' ? 1 : -1
     const sortObject = { [sortField]: sortOrder }
 
@@ -328,7 +323,75 @@ const getAllLeads = async (
             data: [
                 { $sort: sortObject },
                 { $skip: skip },
-                { $limit: Number(limit) }
+                { $limit: Number(limit) },
+                {
+                    $lookup: {
+                        from: `${tenantId}_leads`,
+                        let: { companyId: '$_id' },
+                        pipeline: [
+                            {
+                                $match: {
+                                    $expr: {
+                                        $and: [
+                                            { $eq: ['$company', '$$companyId'] },
+                                            { $eq: ['$deleted.isDeleted', false] }
+                                        ]
+                                    }
+                                }
+                            },
+                            {
+                                $lookup: {
+                                    from: `${tenantId}_contactleads`,
+                                    let: { contactId: '$contact' },
+                                    pipeline: [
+                                        {
+                                            $match: {
+                                                $expr: {
+                                                    $and: [
+                                                        { $eq: ['$_id', '$$contactId'] },
+                                                        { $eq: ['$deleted.isDeleted', false] }
+                                                    ]
+                                                }
+                                            }
+                                        },
+                                        { $project: { deleted: 0 } }
+                                    ],
+                                    as: 'contact'
+                                }
+                            },
+                            {
+                                $unwind: {
+                                    path: '$contact',
+                                    preserveNullAndEmptyArrays: true
+                                }
+                            },
+                            {
+                                $addFields: {
+                                    name: '$contact.name',
+                                    email: '$contact.email',
+                                    phone: '$contact.phone'
+                                }
+                            },
+                            { $sort: { createdAt: -1 } },
+                            {
+                                $project: {
+                                    deleted: 0,
+                                    contact: 0
+                                }
+                            }
+                        ],
+                        as: 'leads'
+                    }
+                },
+                {
+                    $project: {
+                        _id: 0,
+                        company: {
+                            $mergeObjects: ['$companyDetails', { deleted: '$$REMOVE' }]
+                        },
+                        leads: 1
+                    }
+                }
             ],
             totalCount: [
                 { $count: 'count' }
@@ -338,12 +401,12 @@ const getAllLeads = async (
 
     const result = await Lead.aggregate(pipeline)
 
-    const leads = result[0].data
+    const companies = result[0].data
     const total = result[0].totalCount[0]?.count || 0
     const totalPages = Math.ceil(total / limit)
 
     return {
-        leads,
+        leads: companies,
         info: {
             total,
             page: parseInt(page),
@@ -390,6 +453,77 @@ const getLeadById = async (tenantId, id) => {
         },
         {
             $unwind: '$company'
+        },
+        {
+            $lookup: {
+                from: `${tenantId}_leads`,
+                let: { companyId: '$company._id', currentLeadId: '$_id' },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $and: [
+                                    { $eq: ['$company', '$$companyId'] },
+                                    { $eq: ['$deleted.isDeleted', false] },
+                                    { $ne: ['$_id', '$$currentLeadId'] }
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: `${tenantId}_contactleads`,
+                            let: { contactId: '$contact' },
+                            pipeline: [
+                                {
+                                    $match: {
+                                        $expr: {
+                                            $and: [
+                                                { $eq: ['$_id', '$$contactId'] },
+                                                { $eq: ['$deleted.isDeleted', false] }
+                                            ]
+                                        }
+                                    }
+                                },
+                                { $project: { deleted: 0 } }
+                            ],
+                            as: 'contact'
+                        }
+                    },
+                    {
+                        $unwind: {
+                            path: '$contact',
+                            preserveNullAndEmptyArrays: true
+                        }
+                    },
+                    {
+                        $addFields: {
+                            name: '$contact.name',
+                            email: '$contact.email',
+                            phone: '$contact.phone'
+                        }
+                    },
+                    {
+                        $project: {
+                            deleted: 0,
+                            contact: 0
+                        }
+                    },
+                    { $sort: { createdAt: -1 } }
+                ],
+                as: 'company.leads'
+            }
+        },
+        {
+            $addFields: {
+                'company.leads': {
+                    $cond: {
+                        if: { $eq: [{ $size: '$company.leads' }, 0] },
+                        then: null,
+                        else: '$company.leads'
+                    }
+                }
+            }
         },
         {
             $lookup: {
@@ -450,8 +584,16 @@ const getLeadById = async (tenantId, id) => {
             }
         },
         {
+            $addFields: {
+                name: '$contact.name',
+                email: '$contact.email',
+                phone: '$contact.phone'
+            }
+        },
+        {
             $project: {
-                deleted: 0
+                deleted: 0,
+                contact: 0
             }
         }
     ]
@@ -482,7 +624,7 @@ const updateLeadById = async (tenantId, id, payload) => {
             )
         }
 
-        const { company, contacts, status, source, followUp } = payload
+        const { company, name, email, phone, status, source, followUp } = payload
 
         if (company && Object.keys(company).length > 0) {
             const companyUpdateData = {}
@@ -511,89 +653,36 @@ const updateLeadById = async (tenantId, id, payload) => {
             }
         }
 
-        if (contacts && Array.isArray(contacts) && contacts.length > 0) {
-            const contactData = contacts[0]
-            const { status: contactStatus, source: contactSource, followUp: contactFollowUp, ...contactFields } = contactData
+        const contactUpdateData = {}
+        if (name !== undefined) contactUpdateData.name = name
+        if (email !== undefined) contactUpdateData.email = email
 
-            if (Object.keys(contactFields).length > 0) {
-                const contactUpdateData = {}
-
-                Object.keys(contactFields).forEach(key => {
-                    if (contactFields[key] === undefined) return
-
-                    if (key === 'phone' && typeof contactFields.phone === 'object') {
-                        Object.keys(contactFields.phone).forEach(phoneKey => {
-                            if (contactFields.phone[phoneKey] !== undefined) {
-                                contactUpdateData[`phone.${phoneKey}`] = contactFields.phone[phoneKey]
-                            }
-                        })
-                        return
-                    }
-
-                    contactUpdateData[key] = contactFields[key]
-                })
-
-                if (Object.keys(contactUpdateData).length > 0 && lead.contact) {
-                    await ContactLead.findByIdAndUpdate(
-                        lead.contact,
-                        { $set: contactUpdateData },
-                        { session, new: true }
-                    )
+        if (phone && typeof phone === 'object') {
+            Object.keys(phone).forEach(phoneKey => {
+                if (phone[phoneKey] !== undefined) {
+                    contactUpdateData[`phone.${phoneKey}`] = phone[phoneKey]
                 }
-            }
-
-            if (contactStatus !== undefined) {
-                lead.status = contactStatus
-            }
-            if (contactSource !== undefined) {
-                lead.source = contactSource
-            }
-            if (contactFollowUp !== undefined) {
-                lead.followUp = contactFollowUp
-            }
+            })
         }
 
-        if (status !== undefined) {
-            lead.status = status
+        if (Object.keys(contactUpdateData).length > 0 && lead.contact) {
+            await ContactLead.findByIdAndUpdate(
+                lead.contact,
+                { $set: contactUpdateData },
+                { session, new: true }
+            )
         }
-        if (source !== undefined) {
-            lead.source = source
-        }
-        if (followUp !== undefined) {
-            lead.followUp = followUp
-        }
+
+        if (status !== undefined) lead.status = status
+        if (source !== undefined) lead.source = source
+        if (followUp !== undefined) lead.followUp = followUp
 
         await lead.save({ session })
 
-        const updatedLead = await Lead.findById(id)
-            .populate('company')
-            .populate('contact')
-            .session(session)
-
         await session.commitTransaction()
 
-        const companyObj = updatedLead.company?.toObject()
-        const contactObj = updatedLead.contact?.toObject()
+        return await getLeadById(tenantId, id)
 
-        if (companyObj) {
-            delete companyObj.deleted
-        }
-        if (contactObj) {
-            delete contactObj.deleted
-        }
-
-        const sanitizedLead = {
-            _id: updatedLead._id,
-            company: companyObj || null,
-            contact: contactObj || null,
-            status: updatedLead.status,
-            source: updatedLead.source,
-            followUp: updatedLead.followUp,
-            createdAt: updatedLead.createdAt,
-            updatedAt: updatedLead.updatedAt
-        }
-
-        return sanitizedLead
     } catch (error) {
         await session.abortTransaction()
         throw error

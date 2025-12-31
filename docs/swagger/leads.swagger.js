@@ -17,7 +17,7 @@
  *             type: object
  *             required:
  *               - company
- *               - contacts
+ *               - leads
  *             properties:
  *               company:
  *                 type: object
@@ -43,7 +43,7 @@
  *                     type: string
  *                     example: "https://linkedin.com/company/techsolutions"
  *
- *               contacts:
+ *               leads:
  *                 type: array
  *                 minItems: 1
  *                 items:
@@ -90,28 +90,29 @@
  *               errorCode: "0201"
  *               error: null
  *               data:
- *                 - _id: "695b1308d65f7e7ded4eb900"
- *                   company:
- *                     _id: "695b1208d65f7e7ded4eb800"
- *                     name: "XYZ"
- *                     phone:
- *                       extension: "+91"
- *                       number: "1234567890"
- *                     website: "https://xyz.com"
- *                     socialProfile: "https://xyz.linkedin.com"
- *                   contact:
- *                     _id: "695b1255d65f7e7ded4eb850"
- *                     name: "Thiru"
- *                     email: "thiru@gmail.com"
- *                     phone:
- *                       extension: "+91"
- *                       number: "1234567890"
- *                   status: "new"
- *                   source: "linkedin"
- *                   followUp: "2025-12-31T10:00:00.000Z"
- *                   userId: "69217fc1d26c2d434bee1ae4"
+ *                 company:
+ *                   _id: "695b1208d65f7e7ded4eb800"
+ *                   name: "Tech Solutions Inc"
+ *                   phone:
+ *                     extension: "+1"
+ *                     number: "5551234567"
+ *                   website: "https://techsolutions.com"
+ *                   socialProfile: "https://linkedin.com/company/techsolutions"
  *                   createdAt: "2025-12-19T08:55:36.946Z"
  *                   updatedAt: "2025-12-19T08:55:36.946Z"
+ *                 leads:
+ *                   - _id: "695b1308d65f7e7ded4eb900"
+ *                     company: "695b1208d65f7e7ded4eb800"
+ *                     name: "John Smith"
+ *                     email: "john.smith@gmail.com"
+ *                     phone:
+ *                       extension: "+1"
+ *                       number: "5559876543"
+ *                     status: "qualified"
+ *                     source: "referral"
+ *                     followUp: "2025-12-28T14:30:00.000Z"
+ *                     createdAt: "2025-12-19T08:55:36.946Z"
+ *                     updatedAt: "2025-12-19T08:55:36.946Z"
  *
  *       400:
  *         description: Validation error
@@ -175,7 +176,7 @@
  * @swagger
  * /leads:
  *   get:
- *     summary: Get all leads with pagination, filtering, and sorting
+ *     summary: Get all leads grouped by company
  *     tags: [Leads]
  *     security:
  *       - bearerAuth: []
@@ -186,53 +187,25 @@
  *         schema:
  *           type: integer
  *           default: 1
- *         description: Page number
  *       - in: query
  *         name: limit
  *         schema:
  *           type: integer
  *           default: 10
- *         description: Number of items per page
- *       - in: query
- *         name: company
- *         schema:
- *           type: string
- *         description: Filter by company name (partial match)
- *       - in: query
- *         name: contact
- *         schema:
- *           type: string
- *         description: Filter by contact name (partial match)
  *       - in: query
  *         name: status
  *         schema:
  *           type: string
  *           enum: [new, qualified, contacted, done]
- *         description: Filter by status
  *       - in: query
  *         name: source
  *         schema:
  *           type: string
- *         description: Filter by source (partial match)
- *       - in: query
- *         name: sort
- *         schema:
- *           type: string
- *           default: createdAt
- *         description: Sort field
- *       - in: query
- *         name: order
- *         schema:
- *           type: string
- *           enum: [asc, desc]
- *           default: desc
- *         description: Sort order
  *       - in: query
  *         name: followUp
  *         schema:
  *           type: string
  *           format: date
- *         description: Filter by follow-up date (YYYY-MM-DD or ISO date-time)
  *
  *     responses:
  *       200:
@@ -245,40 +218,54 @@
  *               error: "0000"
  *               data:
  *                 leads:
- *                   - _id: "694eec3309bf60ea3b1e9cc6"
- *                     company:
- *                       _id: "694eec3209bf60ea3b1e9cbe"
- *                       name: "XY"
+ *                   - company:
+ *                       _id: "694fec0c231a3da53bdd1997"
+ *                       name: "Tech Solutions Inc"
+ *                       website: "https://techsolutions.com"
  *                       phone:
- *                         extension: "+91"
- *                         number: "1234567899"
- *                       socialProfile: "https://xyz.linkedin.com"
- *                       createdAt: "2025-12-26T20:12:34.548Z"
- *                       updatedAt: "2025-12-26T20:12:34.548Z"
- *                     contact:
- *                       _id: "694eec3309bf60ea3b1e9cc4"
- *                       name: "thir"
- *                       phone:
- *                         extension: "+91"
- *                         number: "1234567899"
- *                       email: "thir@gmail.com"
- *                       createdAt: "2025-12-26T20:12:35.247Z"
- *                       updatedAt: "2025-12-26T20:12:35.247Z"
- *                     status: "new"
- *                     source: "linkedin"
- *                     followUp: "2025-12-31T10:00:00.000Z"
- *                     createdAt: "2025-12-26T20:12:35.552Z"
- *                     updatedAt: "2025-12-26T20:12:35.552Z"
+ *                         extension: "+1"
+ *                         number: "5551234567"
+ *                       email: "support@techsolutions.com"
+ *                       socialProfile: "https://linkedin.com/company/techsolutions"
+ *                       createdAt: "2025-12-27T14:24:12.499Z"
+ *                       updatedAt: "2025-12-28T20:05:26.952Z"
+ *
+ *                     leads:
+ *                       - _id: "694fec0d231a3da53bdd19a1"
+ *                         company: "694fec0c231a3da53bdd1997"
+ *                         name: "John Smith"
+ *                         email: "john.smith@gmail.com"
+ *                         phone:
+ *                           extension: "+1"
+ *                           number: "5559876543"
+ *                         status: "qualified"
+ *                         source: "referral"
+ *                         followUp: "2025-12-28T14:30:00.000Z"
+ *                         createdAt: "2025-12-27T14:24:13.610Z"
+ *                         updatedAt: "2025-12-27T14:24:13.610Z"
+ *
+ *                       - _id: "694fec0d231a3da53bdd19a2"
+ *                         company: "694fec0c231a3da53bdd1997"
+ *                         name: "Sarah Johnson"
+ *                         email: "sarah.johnson@gmail.com"
+ *                         phone:
+ *                           extension: "+1"
+ *                           number: "5558887777"
+ *                         status: "new"
+ *                         source: "website"
+ *                         followUp: "2025-12-30T20:00:00.000Z"
+ *                         createdAt: "2025-12-27T14:24:13.611Z"
+ *                         updatedAt: "2025-12-28T20:05:27.230Z"
  *
  *                 info:
- *                   total: 1
+ *                   total: 8
  *                   page: 1
  *                   limit: 10
  *                   totalPages: 1
  *                   hasMoreRecords: false
  *
  *       401:
- *         description: Unauthorized — token missing, expired, or invalid
+ *         description: Unauthorized
  *         content:
  *           application/json:
  *             examples:
@@ -310,7 +297,7 @@
  * @swagger
  * /leads/{id}:
  *   get:
- *     summary: Get a lead by ID
+ *     summary: Get a lead by ID with company context
  *     tags: [Leads]
  *     security:
  *       - bearerAuth: []
@@ -322,7 +309,7 @@
  *         description: Lead ID
  *         schema:
  *           type: string
- *           example: "694eec3309bf60ea3b1e9cc6"
+ *           example: "694fe95c0d56b0e31babcf66"
  *
  *     responses:
  *       200:
@@ -334,30 +321,43 @@
  *               errorCode: null
  *               error: "0000"
  *               data:
- *                 _id: "694eec3309bf60ea3b1e9cc6"
+ *                 _id: "694fe95c0d56b0e31babcf66"
+ *                 name: "John Michael Smith"
+ *                 email: "jm.smith@gmail.com"
+ *                 phone:
+ *                   extension: "+1"
+ *                   number: "5556666666"
+ *                 status: "contacted"
+ *                 source: "cold_call"
+ *                 followUp: "2025-12-29T16:30:00.000Z"
+ *                 createdAt: "2025-12-27T14:12:44.093Z"
+ *                 updatedAt: "2025-12-27T17:40:39.471Z"
+ *
  *                 company:
- *                   _id: "694eec3209bf60ea3b1e9cbe"
- *                   name: "XY"
+ *                   _id: "694fe95a0d56b0e31babcf5f"
+ *                   name: "Tech Solutions Corp"
+ *                   website: "https://techsolutionscorp.com"
+ *                   email: "support@cybermindworks.com"
  *                   phone:
- *                     extension: "+91"
- *                     number: "1234567899"
- *                   socialProfile: "https://xyz.linkedin.com"
- *                   createdAt: "2025-12-26T20:12:34.548Z"
- *                   updatedAt: "2025-12-26T20:12:34.548Z"
- *                 contact:
- *                   _id: "694eec3309bf60ea3b1e9cc4"
- *                   name: "thir"
- *                   phone:
- *                     extension: "+91"
- *                     number: "1234567899"
- *                   email: "thir@gmail.com"
- *                   createdAt: "2025-12-26T20:12:35.247Z"
- *                   updatedAt: "2025-12-26T20:12:35.247Z"
- *                 status: "new"
- *                 source: "linkedin"
- *                 followUp: "2025-12-31T10:00:00.000Z"
- *                 createdAt: "2025-12-26T20:12:35.552Z"
- *                 updatedAt: "2025-12-26T20:12:35.552Z"
+ *                     extension: "+1"
+ *                     number: "5557777777"
+ *                   socialProfile: "https://linkedin.com/company/techsolutionscorp"
+ *                   createdAt: "2025-12-27T14:12:42.946Z"
+ *                   updatedAt: "2025-12-27T17:40:38.925Z"
+ *
+ *                   leads:
+ *
+ *                     - _id: "694fe95c0d56b0e31babcf67"
+ *                       name: "Brien Austin"
+ *                       email: "brienaustin@cybermindworks.com"
+ *                       phone:
+ *                         extension: "+91"
+ *                         number: "9875886325"
+ *                       status: "contacted"
+ *                       source: "linkedIn"
+ *                       followUp: "2026-01-16T00:00:00.000Z"
+ *                       createdAt: "2025-12-27T14:12:44.093Z"
+ *                       updatedAt: "2025-12-27T14:12:44.093Z"
  *
  *       400:
  *         description: Invalid request parameter
@@ -436,9 +436,9 @@
  *               company:
  *                 type: string
  *                 example: "Updated Company Name"
- *               contact:
+ *               name:
  *                 type: string
- *                 example: "Updated Contact"
+ *                 example: "Updated Name"
  *               email:
  *                 type: string
  *                 format: email
@@ -462,10 +462,42 @@
  *               errorCode: null
  *               error: null
  *               data:
- *                 company: "Updated Company Name"
- *                 contact: "Updated Contact"
+ *                 _id: "694fe95c0d56b0e31babcf66"
+ *                 name: "Updated Name"
  *                 email: "updated.email@acme.com"
+ *                 phone:
+ *                   extension: "+1"
+ *                   number: "5556666666"
  *                 status: "qualified"
+ *                 source: "Website"
+ *                 followUp: "2025-12-29T16:30:00.000Z"
+ *                 createdAt: "2025-12-27T14:12:44.093Z"
+ *                 updatedAt: "2025-12-27T17:40:39.471Z"
+ *
+ *                 company:
+ *                   _id: "694fe95a0d56b0e31babcf5f"
+ *                   name: "Updated Company Name"
+ *                   website: "https://techsolutionscorp.com"
+ *                   email: "support@cybermindworks.com"
+ *                   phone:
+ *                     extension: "+1"
+ *                     number: "5557777777"
+ *                   socialProfile: "https://linkedin.com/company/techsolutionscorp"
+ *                   createdAt: "2025-12-27T14:12:42.946Z"
+ *                   updatedAt: "2025-12-27T17:40:38.925Z"
+ *
+ *                   leads:
+ *                     - _id: "694fe95c0d56b0e31babcf67"
+ *                       name: "Brien Austin"
+ *                       email: "brienaustin@cybermindworks.com"
+ *                       phone:
+ *                         extension: "+91"
+ *                         number: "9875886325"
+ *                       status: "contacted"
+ *                       source: "linkedIn"
+ *                       followUp: "2026-01-16T00:00:00.000Z"
+ *                       createdAt: "2025-12-27T14:12:44.093Z"
+ *                       updatedAt: "2025-12-27T14:12:44.093Z"
  *
  *       400:
  *         description: Invalid request parameter
