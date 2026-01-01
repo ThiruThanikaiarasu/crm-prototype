@@ -1,22 +1,58 @@
 const mongoose = require("mongoose")
 const { ERROR_CODES } = require("../constants/error.constant")
 const ConflictError = require("../errors/ConflictError")
-const leadModel = require("../models/lead.model")
+const NotFoundError = require("../errors/NotFoundError")
 const pipelineModel = require("../models/pipeline.model")
+const companyLeadModel = require("../models/companyLead.model")
 
+/**
+ * Create a new pipeline
+ */
 const createPipeline = async (tenantId, pipelineData) => {
     const Pipeline = pipelineModel(tenantId)
-    const Lead = leadModel(tenantId)
+    const CompanyLead = companyLeadModel(tenantId)
 
-    const existingPipeline = await Pipeline.findOne({ lead: pipelineData.lead })
+    // Check if pipeline already exists for this company
+    const existingPipeline = await Pipeline.findOne({
+        company: pipelineData.company,
+        'deleted.isDeleted': false
+    })
 
-    const leadAggregatePipeline = [
+    if (existingPipeline) {
+        throw new ConflictError(
+            409,
+            'Pipeline already exists for this company',
+            ERROR_CODES.PIPELINE_ALREADY_EXISTS,
+            'conflict'
+        )
+    }
+
+    // Verify company exists
+    const company = await CompanyLead.findOne({
+        _id: pipelineData.company,
+        'deleted.isDeleted': false
+    })
+
+    if (!company) {
+        throw new NotFoundError(
+            404,
+            'Company not found',
+            ERROR_CODES.COMPANY_NOT_FOUND,
+            'not_found'
+        )
+    }
+
+    // Create pipeline
+    const pipeline = await Pipeline.create(pipelineData)
+
+    // Return pipeline with company details
+    const result = await Pipeline.aggregate([
         {
             $match: {
-                _id: new mongoose.Types.ObjectId(pipelineData.lead)
+                _id: pipeline._id
             }
         },
-                {
+        {
             $lookup: {
                 from: `${tenantId}_companyleads`,
                 let: { companyId: '$company' },
@@ -31,11 +67,7 @@ const createPipeline = async (tenantId, pipelineData) => {
                             }
                         }
                     },
-                    {
-                        $project: {
-                            deleted: 0
-                        }
-                    }
+                    { $project: { deleted: 0 } }
                 ],
                 as: 'company'
             }
@@ -44,33 +76,219 @@ const createPipeline = async (tenantId, pipelineData) => {
             $unwind: '$company'
         },
         {
+            $project: {
+                deleted: 0
+            }
+        }
+    ])
+
+    return result[0] || null
+}
+
+/**
+ * Get all pipelines with company details
+ */
+// const getAllPipelines = async (tenantId, filters = {}) => {
+//     const Pipeline = pipelineModel(tenantId)
+
+//     const matchStage = {
+//         'deleted.isDeleted': false
+//     }
+
+//     // Add optional filters
+//     if (filters.opportunityStage) {
+//         matchStage.opportunityStage = filters.opportunityStage
+//     }
+
+//     if (filters.owner) {
+//         matchStage.owner = new mongoose.Types.ObjectId(filters.owner)
+//     }
+
+//     if (filters.company) {
+//         matchStage.company = new mongoose.Types.ObjectId(filters.company)
+//     }
+
+//     const pipelines = await Pipeline.aggregate([
+//         {
+//             $match: matchStage
+//         },
+//         {
+//             $lookup: {
+//                 from: `${tenantId}_companyleads`,
+//                 let: { companyId: '$company' },
+//                 pipeline: [
+//                     {
+//                         $match: {
+//                             $expr: {
+//                                 $and: [
+//                                     { $eq: ['$_id', '$$companyId'] },
+//                                     { $eq: ['$deleted.isDeleted', false] }
+//                                 ]
+//                             }
+//                         }
+//                     },
+//                     { $project: { deleted: 0 } }
+//                 ],
+//                 as: 'company'
+//             }
+//         },
+//         {
+//             $unwind: {
+//                 path: '$company',
+//                 preserveNullAndEmptyArrays: false // Only return pipelines with valid companies
+//             }
+//         },
+//         {
+//             $project: {
+//                 deleted: 0
+//             }
+//         },
+//         {
+//             $sort: { createdAt: -1 }
+//         }
+//     ])
+
+//     return pipelines
+// }
+
+/**
+ * Get all pipelines with company details, pagination, and info
+ */
+const getAllPipelines = async (
+    tenantId,
+    {
+        page = 1,
+        limit = 10,
+        opportunityStage,
+        owner,
+        company,
+        sort = 'createdAt',
+        order = 'desc'
+    } = {}
+) => {
+    const Pipeline = pipelineModel(tenantId)
+
+    const matchStage = {
+        'deleted.isDeleted': false
+    }
+
+    // Add optional filters
+    if (opportunityStage) {
+        matchStage.opportunityStage = opportunityStage
+    }
+
+    if (owner) {
+        matchStage.owner = new mongoose.Types.ObjectId(owner)
+    }
+
+    if (company) {
+        matchStage.company = new mongoose.Types.ObjectId(company)
+    }
+
+    const skip = (page - 1) * limit
+    const sortOrder = order === 'asc' ? 1 : -1
+
+    // Get total count
+    const total = await Pipeline.countDocuments(matchStage)
+
+    // Get paginated data
+    const pipelines = await Pipeline.aggregate([
+        {
+            $match: matchStage
+        },
+        {
             $lookup: {
-                from: `${tenantId}_contactleads`,
-                let: { contactId: '$contact' },
+                from: `${tenantId}_companyleads`,
+                let: { companyId: '$company' },
                 pipeline: [
                     {
                         $match: {
                             $expr: {
                                 $and: [
-                                    { $eq: ['$_id', '$$contactId'] },
+                                    { $eq: ['$_id', '$$companyId'] },
                                     { $eq: ['$deleted.isDeleted', false] }
                                 ]
                             }
                         }
                     },
-                    {
-                        $project: {
-                            deleted: 0
-                        }
-                    }
+                    { $project: { deleted: 0 } }
                 ],
-                as: 'contact'
+                as: 'company'
             }
         },
         {
             $unwind: {
-                path: '$contact',
-                preserveNullAndEmptyArrays: true
+                path: '$company',
+                preserveNullAndEmptyArrays: false
+            }
+        },
+        {
+            $project: {
+                deleted: 0
+            }
+        },
+        {
+            $sort: { [sort]: sortOrder }
+        },
+        {
+            $skip: skip
+        },
+        {
+            $limit: Number(limit)
+        }
+    ])
+
+    const totalPages = Math.ceil(total / limit)
+
+    return {
+        pipelines,
+        info: {
+            total,
+            page: Number(page),
+            limit: Number(limit),
+            totalPages,
+            hasMoreRecords: page < totalPages
+        }
+    }
+}
+
+/**
+ * Get pipeline by ID with company details
+ */
+const getPipelineById = async (tenantId, pipelineId) => {
+    const Pipeline = pipelineModel(tenantId)
+
+    const pipelines = await Pipeline.aggregate([
+        {
+            $match: {
+                _id: new mongoose.Types.ObjectId(pipelineId),
+                'deleted.isDeleted': false
+            }
+        },
+        {
+            $lookup: {
+                from: `${tenantId}_companyleads`,
+                let: { companyId: '$company' },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $and: [
+                                    { $eq: ['$_id', '$$companyId'] },
+                                    { $eq: ['$deleted.isDeleted', false] }
+                                ]
+                            }
+                        }
+                    },
+                    { $project: { deleted: 0 } }
+                ],
+                as: 'company'
+            }
+        },
+        {
+            $unwind: {
+                path: '$company',
+                preserveNullAndEmptyArrays: false
             }
         },
         {
@@ -78,208 +296,13 @@ const createPipeline = async (tenantId, pipelineData) => {
                 deleted: 0
             }
         }
-    ]
-    const leadData = await Lead.aggregate(leadAggregatePipeline)
-
-    if (existingPipeline) {
-        throw new ConflictError(
-            409,
-            'Pipeline already exists',
-            ERROR_CODES.PIPELINE_ALREADY_EXISTS,
-            'conflict'
-        )
-    }
-
-    const pipeline = await Pipeline.create(pipelineData)
-
-    const sanitizedData = {
-        ...pipeline.toObject(),
-        lead: leadData
-    }
-
-    return sanitizedData
-}
-
-const getAllPipelines = async (tenantId) => {
-    const Pipeline = pipelineModel(tenantId)
-
-    const pipelines = await Pipeline.aggregate([
-        {
-            $match: {
-                'deleted.isDeleted': false
-            }
-        },
-        {
-            $lookup: {
-                from: `${tenantId}_leads`,
-                localField: 'lead',
-                foreignField: '_id',
-                as: 'lead'
-            }
-        },
-        {
-            $unwind: '$lead'
-        },
-        {
-            $lookup: {
-                from: `${tenantId}_companyleads`,
-                let: { companyId: '$lead.company' },
-                pipeline: [
-                    {
-                        $match: {
-                            $expr: {
-                                $and: [
-                                    { $eq: ['$_id', '$$companyId'] },
-                                    { $eq: ['$deleted.isDeleted', false] }
-                                ]
-                            }
-                        }
-                    },
-                    {
-                        $project: {
-                            deleted: 0
-                        }
-                    }
-                ],
-                as: 'lead.company'
-            }
-        },
-        {
-            $unwind: '$lead.company'
-        },
-        {
-            $lookup: {
-                from: `${tenantId}_contactleads`,
-                let: { contactId: '$lead.contact' },
-                pipeline: [
-                    {
-                        $match: {
-                            $expr: {
-                                $and: [
-                                    { $eq: ['$_id', '$$contactId'] },
-                                    { $eq: ['$deleted.isDeleted', false] }
-                                ]
-                            }
-                        }
-                    },
-                    {
-                        $project: {
-                            deleted: 0
-                        }
-                    }
-                ],
-                as: 'lead.contact'
-            }
-        },
-        {
-            $unwind: {
-                path: '$lead.contact',
-                preserveNullAndEmptyArrays: true
-            }
-        },
-        {
-            $project: {
-                deleted: 0,
-                'lead.deleted': 0
-            }
-        }
     ])
 
-    return pipelines
-}
-
-const getPipelineById = async (tenantId, pipelineId) => {
-     const Pipeline = pipelineModel(tenantId)
-
-    const pipelines = await Pipeline.aggregate([
-        {
-            $match: {
-                'deleted.isDeleted': false,
-                _id: new mongoose.Types.ObjectId(pipelineId)
-            }
-        },
-        {
-            $lookup: {
-                from: `${tenantId}_leads`,
-                localField: 'lead',
-                foreignField: '_id',
-                as: 'lead'
-            }
-        },
-        {
-            $unwind: '$lead'
-        },
-        {
-            $lookup: {
-                from: `${tenantId}_companyleads`,
-                let: { companyId: '$lead.company' },
-                pipeline: [
-                    {
-                        $match: {
-                            $expr: {
-                                $and: [
-                                    { $eq: ['$_id', '$$companyId'] },
-                                    { $eq: ['$deleted.isDeleted', false] }
-                                ]
-                            }
-                        }
-                    },
-                    {
-                        $project: {
-                            deleted: 0
-                        }
-                    }
-                ],
-                as: 'lead.company'
-            }
-        },
-        {
-            $unwind: '$lead.company'
-        },
-        {
-            $lookup: {
-                from: `${tenantId}_contactleads`,
-                let: { contactId: '$lead.contact' },
-                pipeline: [
-                    {
-                        $match: {
-                            $expr: {
-                                $and: [
-                                    { $eq: ['$_id', '$$contactId'] },
-                                    { $eq: ['$deleted.isDeleted', false] }
-                                ]
-                            }
-                        }
-                    },
-                    {
-                        $project: {
-                            deleted: 0
-                        }
-                    }
-                ],
-                as: 'lead.contact'
-            }
-        },
-        {
-            $unwind: {
-                path: '$lead.contact',
-                preserveNullAndEmptyArrays: true
-            }
-        },
-        {
-            $project: {
-                deleted: 0,
-                'lead.deleted': 0
-            }
-        }
-    ])
-
-    return pipelines[0]
+    return pipelines[0] || null
 }
 
 const updatePipelineById = async (tenantId, pipelineId, pipelineData) => {
     const Pipeline = pipelineModel(tenantId)
-    const Lead = leadModel(tenantId)
 
     const pipeline = await Pipeline.findOne({
         _id: pipelineId,
@@ -295,12 +318,28 @@ const updatePipelineById = async (tenantId, pipelineId, pipelineData) => {
         )
     }
 
-    console.log(pipeline.lead)
+    const allowedFields = [
+        'opportunityStage',
+        'estimatedValue',
+        'probability',
+        'expectedRevnue',
+        'nextStep',
+        'followUp',
+        'remarks'
+    ]
 
-    const leadAggregatePipeline = [
+    allowedFields.forEach(field => {
+        if (pipelineData[field] !== undefined) {
+            pipeline[field] = pipelineData[field]
+        }
+    })
+
+    await pipeline.save()
+
+    const result = await Pipeline.aggregate([
         {
             $match: {
-                _id: pipeline.lead
+                _id: pipeline._id
             }
         },
         {
@@ -323,51 +362,22 @@ const updatePipelineById = async (tenantId, pipelineId, pipelineData) => {
                 as: 'company'
             }
         },
-        { $unwind: '$company' },
-        {
-            $lookup: {
-                from: `${tenantId}_contactleads`,
-                let: { contactId: '$contact' },
-                pipeline: [
-                    {
-                        $match: {
-                            $expr: {
-                                $and: [
-                                    { $eq: ['$_id', '$$contactId'] },
-                                    { $eq: ['$deleted.isDeleted', false] }
-                                ]
-                            }
-                        }
-                    },
-                    { $project: { deleted: 0 } }
-                ],
-                as: 'contact'
-            }
-        },
         {
             $unwind: {
-                path: '$contact',
-                preserveNullAndEmptyArrays: true
+                path: '$company',
+                preserveNullAndEmptyArrays: false
             }
         },
-        { $project: { deleted: 0 } }
-    ]
-
-    const leadData = await Lead.aggregate(leadAggregatePipeline)
-
-    Object.keys(pipelineData).forEach(key => {
-        if (key !== 'lead' && pipelineData[key] !== undefined) {
-            pipeline[key] = pipelineData[key]
+        {
+            $project: {
+                deleted: 0
+            }
         }
-    })
+    ])
 
-    await pipeline.save()
-
-    return {
-        ...pipeline.toObject(),
-        lead: leadData[0] || null
-    }
+    return result[0] || null
 }
+
 
 const deletePipelineById = async (tenantId, userId, id) => {
     const Pipeline = pipelineModel(tenantId)

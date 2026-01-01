@@ -2,9 +2,9 @@ const { body } = require('express-validator')
 
 const validateCreatePipelinePayload = [
 
-    body('lead')
-        .notEmpty().withMessage('Lead is required')
-        .isMongoId().withMessage('Lead must be a valid id'),
+    body('company')
+        .notEmpty().withMessage('Company is required')
+        .isMongoId().withMessage('Company must be a valid id'),
 
     body('opportunityStage')
         .optional({ nullable: true })

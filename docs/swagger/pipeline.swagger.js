@@ -2,7 +2,7 @@
  * @swagger
  * /pipeline:
  *   post:
- *     summary: Create a pipeline for a lead
+ *     summary: Create a pipeline for a company
  *     tags: [Pipelines]
  *     security:
  *       - bearerAuth: []
@@ -14,13 +14,13 @@
  *           schema:
  *             type: object
  *             required:
- *               - lead
+ *               - company
  *               - opportunityStage
  *             properties:
- *               lead:
+ *               company:
  *                 type: string
- *                 description: Lead ID for which pipeline is created
- *                 example: "694fec0d231a3da53bdd19a2"
+ *                 description: Company ID for which the pipeline is created
+ *                 example: "695012cce2389e938f922e9c"
  *               opportunityStage:
  *                 type: string
  *                 description: Current stage of the opportunity
@@ -61,33 +61,17 @@
  *               errorCode: null
  *               error: "0601"
  *               data:
- *                 _id: "695042d54d1d9b15f79d4c50"
- *                 lead:
- *                   - _id: "694fec0d231a3da53bdd19a2"
- *                     company:
- *                       _id: "694fec0c231a3da53bdd1997"
- *                       name: "Tech Solutions Inc"
- *                       website: "https://techsolutions.com"
- *                       phone:
- *                         extension: "+1"
- *                         number: "5551234567"
- *                       socialProfile: "https://linkedin.com/company/techsolutions"
- *                       createdAt: "2025-12-27T14:24:12.499Z"
- *                       updatedAt: "2025-12-27T14:24:12.499Z"
- *                     contact:
- *                       _id: "694fec0d231a3da53bdd199f"
- *                       name: "Sarah Johnson"
- *                       phone:
- *                         extension: "+1"
- *                         number: "5558887777"
- *                       email: "sarah.johnson@gmail.com"
- *                       createdAt: "2025-12-27T14:24:13.332Z"
- *                       updatedAt: "2025-12-27T14:24:13.332Z"
- *                     status: "new"
- *                     source: "website"
- *                     followUp: "2025-12-30T09:00:00.000Z"
- *                     createdAt: "2025-12-27T14:24:13.611Z"
- *                     updatedAt: "2025-12-27T14:24:13.611Z"
+ *                 _id: "69565ee981355feed0cee28b"
+ *                 company:
+ *                   _id: "695012cce2389e938f922e9c"
+ *                   name: "GK Tech"
+ *                   website: "gktech.com"
+ *                   phone:
+ *                     extension: "+91"
+ *                     number: "5551234599"
+ *                   socialProfile: "https://linkedin.com/company/gktech"
+ *                   createdAt: "2025-12-27T17:09:32.390Z"
+ *                   updatedAt: "2025-12-27T17:09:32.390Z"
  *                 opportunityStage: "lead"
  *                 estimatedValue: 12000
  *                 probability: 12
@@ -96,15 +80,15 @@
  *                 followUp: "2025-12-10T10:00:00.000Z"
  *                 remarks: "contacted"
  *                 owner: "69217ce444bd86cfef120bd6"
- *                 deleted:
- *                   isDeleted: false
+ *                 createdAt: "2026-01-01T11:47:53.630Z"
+ *                 updatedAt: "2026-01-01T11:47:53.630Z"
  *
  *       400:
  *         description: Validation error
  *         content:
  *           application/json:
  *             example:
- *               message: "Invalid lead id"
+ *               message: "Company is a mandatory field"
  *               errorCode: "1001"
  *               error: "validation_error"
  *               data: null
@@ -127,12 +111,22 @@
  *                   error: "authentication_error"
  *                   data: null
  *
- *       409:
- *         description: Conflict — pipeline already exists for this lead
+ *       404:
+ *         description: Company not found
  *         content:
  *           application/json:
  *             example:
- *               message: "Pipeline already exists"
+ *               message: "Company not found"
+ *               errorCode: "4401"
+ *               error: "not_found"
+ *               data: null
+ *
+ *       409:
+ *         description: Conflict — pipeline already exists for this company
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: "Pipeline already exists for this company"
  *               errorCode: "0602"
  *               error: "conflict"
  *               data: null
@@ -167,41 +161,35 @@
  *               errorCode: null
  *               error: "0000"
  *               data:
- *                 - _id: "695042d54d1d9b15f79d4c50"
- *                   lead:
- *                     _id: "694fec0d231a3da53bdd19a2"
+ *                 pipelines:
+ *                   - _id: "69565ee981355feed0cee28b"
  *                     company:
- *                       _id: "694fec0c231a3da53bdd1997"
- *                       name: "Tech Solutions Inc"
- *                       website: "https://techsolutions.com"
+ *                       _id: "695012cce2389e938f922e9c"
+ *                       name: "GK Tech"
+ *                       website: "gktech.com"
  *                       phone:
- *                         extension: "+1"
- *                         number: "5551234567"
- *                       socialProfile: "https://linkedin.com/company/techsolutions"
- *                       createdAt: "2025-12-27T14:24:12.499Z"
- *                       updatedAt: "2025-12-27T14:24:12.499Z"
- *                     contact:
- *                       _id: "694fec0d231a3da53bdd199f"
- *                       name: "Sarah Johnson"
- *                       phone:
- *                         extension: "+1"
- *                         number: "5558887777"
- *                       email: "sarah.johnson@gmail.com"
- *                       createdAt: "2025-12-27T14:24:13.332Z"
- *                       updatedAt: "2025-12-27T14:24:13.332Z"
- *                     status: "new"
- *                     source: "website"
- *                     followUp: "2025-12-30T09:00:00.000Z"
- *                     createdAt: "2025-12-27T14:24:13.611Z"
- *                     updatedAt: "2025-12-27T14:24:13.611Z"
- *                   opportunityStage: "lead"
- *                   estimatedValue: 12000
- *                   probability: 12
- *                   expectedRevnue: 10000
- *                   nextStep: "next"
- *                   followUp: "2025-12-10T10:00:00.000Z"
- *                   remarks: "contacted"
- *                   owner: "69217ce444bd86cfef120bd6"
+ *                         extension: "+91"
+ *                         number: "5551234599"
+ *                       socialProfile: "https://linkedin.com/company/gktech"
+ *                       createdAt: "2025-12-27T17:09:32.390Z"
+ *                       updatedAt: "2025-12-27T17:09:32.390Z"
+ *                     opportunityStage: "lead"
+ *                     estimatedValue: 12000
+ *                     probability: 12
+ *                     expectedRevnue: 10000
+ *                     nextStep: "next"
+ *                     followUp: "2025-12-10T10:00:00.000Z"
+ *                     remarks: "contacted"
+ *                     owner: "69217ce444bd86cfef120bd6"
+ *                     createdAt: "2026-01-01T11:47:53.630Z"
+ *                     updatedAt: "2026-01-01T11:47:53.630Z"
+ *
+ *                 info:
+ *                   total: 8
+ *                   page: 1
+ *                   limit: 10
+ *                   totalPages: 1
+ *                   hasMoreRecords: false
  *
  *       401:
  *         description: Unauthorized
@@ -248,7 +236,7 @@
  *         description: Pipeline ID
  *         schema:
  *           type: string
- *           example: "695042d54d1d9b15f79d4c50"
+ *           example: "69565ee981355feed0cee28b"
  *
  *     responses:
  *       200:
@@ -260,33 +248,17 @@
  *               errorCode: null
  *               error: "0000"
  *               data:
- *                 _id: "695042d54d1d9b15f79d4c50"
- *                 lead:
- *                   _id: "694fec0d231a3da53bdd19a2"
- *                   company:
- *                     _id: "694fec0c231a3da53bdd1997"
- *                     name: "Tech Solutions Inc"
- *                     website: "https://techsolutions.com"
- *                     phone:
- *                       extension: "+1"
- *                       number: "5551234567"
- *                     socialProfile: "https://linkedin.com/company/techsolutions"
- *                     createdAt: "2025-12-27T14:24:12.499Z"
- *                     updatedAt: "2025-12-27T14:24:12.499Z"
- *                   contact:
- *                     _id: "694fec0d231a3da53bdd199f"
- *                     name: "Sarah Johnson"
- *                     phone:
- *                       extension: "+1"
- *                       number: "5558887777"
- *                     email: "sarah.johnson@gmail.com"
- *                     createdAt: "2025-12-27T14:24:13.332Z"
- *                     updatedAt: "2025-12-27T14:24:13.332Z"
- *                   status: "new"
- *                   source: "website"
- *                   followUp: "2025-12-30T09:00:00.000Z"
- *                   createdAt: "2025-12-27T14:24:13.611Z"
- *                   updatedAt: "2025-12-27T14:24:13.611Z"
+ *                 _id: "69565ee981355feed0cee28b"
+ *                 company:
+ *                   _id: "695012cce2389e938f922e9c"
+ *                   name: "GK Tech"
+ *                   website: "gktech.com"
+ *                   phone:
+ *                     extension: "+91"
+ *                     number: "5551234599"
+ *                   socialProfile: "https://linkedin.com/company/gktech"
+ *                   createdAt: "2025-12-27T17:09:32.390Z"
+ *                   updatedAt: "2025-12-27T17:09:32.390Z"
  *                 opportunityStage: "lead"
  *                 estimatedValue: 12000
  *                 probability: 12
@@ -295,6 +267,8 @@
  *                 followUp: "2025-12-10T10:00:00.000Z"
  *                 remarks: "contacted"
  *                 owner: "69217ce444bd86cfef120bd6"
+ *                 createdAt: "2026-01-01T11:47:53.630Z"
+ *                 updatedAt: "2026-01-01T11:47:53.630Z"
  *
  *       400:
  *         description: Invalid request parameter
@@ -361,7 +335,7 @@
  *         description: Pipeline ID
  *         schema:
  *           type: string
- *           example: "695042d54d1d9b15f79d4c50"
+ *           example: "69565ee981355feed0cee28b"
  *
  *     requestBody:
  *       required: true
@@ -375,7 +349,7 @@
  *                 example: "lead"
  *               estimatedValue:
  *                 type: number
- *                 example: 12000
+ *                 example: 13000
  *               probability:
  *                 type: number
  *                 example: 12
@@ -391,7 +365,7 @@
  *                 example: "2025-12-10T10:00:00.000Z"
  *               remarks:
  *                 type: string
- *                 example: "Asked to follow up later"
+ *                 example: "contacted"
  *
  *     responses:
  *       200:
@@ -403,41 +377,27 @@
  *               errorCode: null
  *               error: "0000"
  *               data:
- *                 _id: "695042d54d1d9b15f79d4c50"
- *                 lead:
- *                   _id: "694fec0d231a3da53bdd19a2"
- *                   company:
- *                     _id: "694fec0c231a3da53bdd1997"
- *                     name: "Tech Solutions Inc"
- *                     website: "https://techsolutions.com"
- *                     phone:
- *                       extension: "+1"
- *                       number: "5551234567"
- *                     socialProfile: "https://linkedin.com/company/techsolutions"
- *                     createdAt: "2025-12-27T14:24:12.499Z"
- *                     updatedAt: "2025-12-27T14:24:12.499Z"
- *                   contact:
- *                     _id: "694fec0d231a3da53bdd199f"
- *                     name: "Sarah Johnson"
- *                     phone:
- *                       extension: "+1"
- *                       number: "5558887777"
- *                     email: "sarah.johnson@gmail.com"
- *                     createdAt: "2025-12-27T14:24:13.332Z"
- *                     updatedAt: "2025-12-27T14:24:13.332Z"
- *                   status: "new"
- *                   source: "website"
- *                   followUp: "2025-12-30T09:00:00.000Z"
- *                   createdAt: "2025-12-27T14:24:13.611Z"
- *                   updatedAt: "2025-12-27T14:24:13.611Z"
+ *                 _id: "69565ee981355feed0cee28b"
+ *                 company:
+ *                   _id: "695012cce2389e938f922e9c"
+ *                   name: "GK Tech"
+ *                   website: "gktech.com"
+ *                   phone:
+ *                     extension: "+91"
+ *                     number: "5551234599"
+ *                   socialProfile: "https://linkedin.com/company/gktech"
+ *                   createdAt: "2025-12-27T17:09:32.390Z"
+ *                   updatedAt: "2025-12-27T17:09:32.390Z"
  *                 opportunityStage: "lead"
- *                 estimatedValue: 12000
+ *                 estimatedValue: 13000
  *                 probability: 12
  *                 expectedRevnue: 10000
  *                 nextStep: "next"
  *                 followUp: "2025-12-10T10:00:00.000Z"
- *                 remarks: "Asked to follow up later"
+ *                 remarks: "contacted"
  *                 owner: "69217ce444bd86cfef120bd6"
+ *                 createdAt: "2026-01-01T11:47:53.630Z"
+ *                 updatedAt: "2026-01-01T12:06:57.438Z"
  *
  *       400:
  *         description: Validation error

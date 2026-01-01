@@ -3,10 +3,10 @@ const mongoose = require('mongoose')
 const createPipelineSchema = (tenantId) => {
     const pipelineSchema = new mongoose.Schema(
         {
-            lead: {
+            company: {
                 type: mongoose.Schema.Types.ObjectId,
-                ref: `${tenantId}_leads`,
-                required: [true, 'Lead is required']
+                ref: `${tenantId}_companyleads`,
+                required: [true, 'Company is required']
             },
             opportunityStage: {
                 type: String,
@@ -19,11 +19,13 @@ const createPipelineSchema = (tenantId) => {
             },
             probability: {
                 type: Number,
-                default: 0
+                default: 0,
+                min: [0, 'Probability cannot be negative'],
+                max: [100, 'Probability cannot exceed 100']
             },
             expectedRevnue: {
                 type: Number,
-                default: 0
+                default: 0,
             },
             nextStep: {
                 type: String,
@@ -59,12 +61,15 @@ const createPipelineSchema = (tenantId) => {
                     select: false,
                 },
             },
-
+        },
+        {
+            timestamps: true,
+            versionKey: false,
         }
     )
 
     pipelineSchema.index(
-        { lead: 1, 'deleted.isDeleted': 1 },
+        { company: 1, 'deleted.isDeleted': 1 },
         { collation: { locale: 'ar', strength: 1 } }
     )
 
