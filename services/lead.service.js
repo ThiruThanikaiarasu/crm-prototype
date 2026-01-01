@@ -635,7 +635,7 @@ const updateLeadById = async (tenantId, id, payload) => {
             )
         }
 
-        const { company, name, email, phone, status, source, followUp, priority } = payload
+        const { company, leads, name, email, phone, status, source, followUp, priority } = payload
 
         if (company && Object.keys(company).length > 0) {
             const companyUpdateData = {}
@@ -676,12 +676,104 @@ const updateLeadById = async (tenantId, id, payload) => {
             })
         }
 
-        if (Object.keys(contactUpdateData).length > 0 && lead.contact) {
-            await ContactLead.findByIdAndUpdate(
-                lead.contact,
-                { $set: contactUpdateData },
-                { session, new: true }
-            )
+        if (Object.keys(contactUpdateData).length > 0) {
+            if (lead.contact) {
+                // Update existing contact
+                await ContactLead.findByIdAndUpdate(
+                    lead.contact,
+                    { $set: contactUpdateData },
+                    { session, new: true }
+                )
+            } else {
+                // Create NEW contact if lead doesn't have one
+                const [newContact] = await ContactLead.create(
+                    [{
+                        ...contactUpdateData,
+                        // Ensure required fields are present or handle specifically if needed (validation handles this usually)
+                    }],
+                    { session }
+                )
+                
+                // Link new contact to the lead
+                lead.contact = newContact._id
+            }
+        }
+
+        // Handle creation of new leads (contacts) if provided
+        if (leads && Array.isArray(leads) && leads.length > 0) {
+            const escapeRegex = value => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+            const leadsToProcess = []
+            
+            // 1. Check for duplicates and filter them out
+            for (const leadData of leads) {
+                const contactQuery = {
+                    'deleted.isDeleted': false,
+                    $or: []
+                }
+
+                if (leadData?.email && typeof leadData.email === 'string' && leadData.email.trim().length > 0) {
+                    contactQuery.$or.push({
+                        email: {
+                            $regex: `^${escapeRegex(leadData.email)}$`,
+                            $options: 'i'
+                        }
+                    })
+                }
+
+                if (leadData?.phone?.number && typeof leadData.phone.number === 'string' && leadData.phone.number.trim().length > 0) {
+                    contactQuery.$or.push({
+                        'phone.number': leadData.phone.number
+                    })
+                }
+
+                let exists = false
+                if (contactQuery.$or.length > 0) {
+                    const existingContact = await ContactLead.findOne(contactQuery).session(session)
+                    if (existingContact) {
+                        exists = true
+                        // Log or ignore? ignoring as per "Intelligent Edit"
+                    }
+                }
+                
+                if (!exists) {
+                    leadsToProcess.push(leadData)
+                }
+            }
+
+            if (leadsToProcess.length > 0) {
+                // 2. Prepare contacts for insertion
+                const contactsToInsert = leadsToProcess.map(leadData => {
+                    const { status, source, followUp, priority, ...contactInfo } = leadData
+                    return contactInfo
+                })
+
+                // 3. Insert new contacts
+                const insertedContacts = await ContactLead.insertMany(
+                    contactsToInsert,
+                    { session }
+                )
+
+                // 4. Prepare leads for insertion (linking to EXISTING company)
+                const leadsToInsert = insertedContacts.map((contactLead, index) => {
+                    const originalLead = leadsToProcess[index]
+                    return {
+                        company: lead.company, // Use existing company ID
+                        contact: contactLead._id,
+                        status: originalLead.status || 'new',
+                        source: originalLead.source || null,
+                        followUp: originalLead.followUp || null,
+                        priority: originalLead.priority || 1,
+                        owner: lead.owner // Proactively assigning existing lead's owner
+                    }
+                })
+
+                // 5. Insert new leads
+                await Lead.create(
+                    leadsToInsert,
+                    { session }
+                )
+            }
         }
 
         if (status !== undefined) lead.status = status
