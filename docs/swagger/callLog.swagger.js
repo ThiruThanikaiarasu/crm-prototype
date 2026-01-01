@@ -55,36 +55,93 @@
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             required:
- *               - lead
- *               - followUp
- *               - remarks
- *             properties:
- *               lead:
- *                 type: string
- *                 description: Existing lead ID
- *                 example: "6955641a87fdbdffbd0f66bf"
- *               outcome:
- *                 type: string
- *                 enum: [interested, not_interested, contacted, done]
- *                 example: "contacted"
- *               followUp:
- *                 type: string
- *                 format: date-time
- *                 example: "2025-12-31T00:00:00.000Z"
- *               remarks:
- *                 type: string
- *                 example: "Customer requested follow-up"
- *               callStartTime:
- *                 type: string
- *                 format: date-time
- *                 description: When the call started
- *                 example: "2025-12-31T10:00:00.000Z"
- *               callDuration:
- *                 type: integer
- *                 description: Duration of the call in seconds
- *                 example: 300
+ *             oneOf:
+ *               - title: Existing lead
+ *                 type: object
+ *                 required:
+ *                   - lead
+ *                   - followUp
+ *                   - remarks
+ *                 properties:
+ *                   lead:
+ *                     type: string
+ *                     description: Existing lead ID
+ *                     example: "6955641a87fdbdffbd0f66bf"
+ *                   outcome:
+ *                     type: string
+ *                     enum: [interested, not_interested, contacted, done]
+ *                     example: "contacted"
+ *                   followUp:
+ *                     type: string
+ *                     format: date-time
+ *                     example: "2025-12-31T00:00:00.000Z"
+ *                   callStartTime:
+ *                     type: string
+ *                     format: date-time
+ *                     example: "2025-12-31T10:00:00.000Z"
+ *                   callDuration:
+ *                     type: integer
+ *                     example: 300
+ *                   remarks:
+ *                     type: string
+ *                     example: "Customer requested follow-up"
+ *
+ *               - title: New lead
+ *                 type: object
+ *                 required:
+ *                   - leadName
+ *                   - companyId
+ *                   - followUp
+ *                   - remarks
+ *                 properties:
+ *                   leadName:
+ *                     type: string
+ *                     description: Name of the new lead to be created
+ *                     example: "Jack"
+ *                   companyId:
+ *                     type: string
+ *                     description: Company ID under which the lead will be created
+ *                     example: "694fe4540d56b0e31babcea7"
+ *                   outcome:
+ *                     type: string
+ *                     enum: [interested, not_interested, contacted, done]
+ *                     example: "contacted"
+ *                   followUp:
+ *                     type: string
+ *                     format: date-time
+ *                     example: "2026-02-10T10:00:00.000Z"
+ *                   callStartTime:
+ *                     type: string
+ *                     format: date-time
+ *                     example: "2026-01-01T10:00:00.000Z"
+ *                   callDuration:
+ *                     type: integer
+ *                     example: 300
+ *                   remarks:
+ *                     type: string
+ *                     example: "Asked to follow up later"
+ *
+ *           examples:
+ *             ExistingLead:
+ *               summary: Existing lead
+ *               value:
+ *                 lead: "6955641a87fdbdffbd0f66bf"
+ *                 outcome: "contacted"
+ *                 followUp: "2025-12-31T00:00:00.000Z"
+ *                 callStartTime: "2025-12-31T10:00:00.000Z"
+ *                 callDuration: 300
+ *                 remarks: "Customer requested follow-up"
+ *
+ *             NewLead:
+ *               summary: New lead
+ *               value:
+ *                 leadName: "Jack"
+ *                 companyId: "694fe4540d56b0e31babcea7"
+ *                 outcome: "contacted"
+ *                 followUp: "2026-02-10T10:00:00.000Z"
+ *                 callStartTime: "2026-01-01T10:00:00.000Z"
+ *                 callDuration: 300
+ *                 remarks: "Asked to follow up later"
  *
  *     responses:
  *       201:
@@ -95,45 +152,14 @@
  *               message: "Call log created successfully"
  *               errorCode: "0301"
  *               error: null
- *               data:
- *                 _id: "695021a8533f976683911867"
- *                 outcome: "contacted"
- *                 followUp: "2025-12-31T00:00:00.000Z"
- *                 remarks: "Customer requested follow-up"
- *                 callStartTime: "2025-12-31T10:00:00.000Z"
- *                 callDuration: 300
- *                 createdAt: "2025-12-31T18:12:56.628Z"
- *                 updatedAt: "2025-12-31T18:12:56.628Z"
- *                 lead:
- *                   _id: "6955641a87fdbdffbd0f66bf"
- *                   name: "John"
- *                   email: "john@gmail.com"
- *                   phone:
- *                     extension: "+1"
- *                     number: "5559876546"
- *                   status: "qualified"
- *                   source: "website"
- *                   followUp: "2025-12-28T14:30:00.000Z"
- *                   priority: 1
- *                   createdAt: "2025-12-31T17:57:46.816Z"
- *                   updatedAt: "2025-12-31T17:57:46.816Z"
- *                   company:
- *                     _id: "6955641887fdbdffbd0f66b6"
- *                     name: "Tech M"
- *                     website: "https://techsolutions.com"
- *                     phone:
- *                       extension: "+1"
- *                       number: "5551234568"
- *                     socialProfile: "https://linkedin.com/company/techsolutions"
- *                     createdAt: "2025-12-31T17:57:44.965Z"
- *                     updatedAt: "2025-12-31T17:57:44.965Z"
+ *               data: {}
  *
  *       400:
  *         description: Validation error
  *         content:
  *           application/json:
  *             example:
- *               message: "Lead is required"
+ *               message: "Either lead or (companyId + leadName) is required"
  *               errorCode: "1001"
  *               error: "validation_error"
  *               data: null
@@ -157,14 +183,22 @@
  *                   data: null
  *
  *       404:
- *         description: Lead not found
+ *         description: Lead or Company not found
  *         content:
  *           application/json:
- *             example:
- *               message: "Lead not found"
- *               errorCode: "4201"
- *               error: "not_found"
- *               data: null
+ *             examples:
+ *               LeadNotFound:
+ *                 value:
+ *                   message: "Lead not found"
+ *                   errorCode: "4201"
+ *                   error: "not_found"
+ *                   data: null
+ *               CompanyNotFound:
+ *                 value:
+ *                   message: "Company not found"
+ *                   errorCode: "4101"
+ *                   error: "not_found"
+ *                   data: null
  *
  *       500:
  *         description: Internal server error
