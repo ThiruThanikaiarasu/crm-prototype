@@ -9,6 +9,7 @@ const required = [
     'REFRESH_TOKEN_TTL',
     'EMAIL_USER',
     'EMAIL_PASS',
+    'CORS_ORIGIN_URL'
 ]
 
 required.forEach((variable) => {
@@ -27,4 +28,5 @@ module.exports = {
     refreshTtl: process.env.REFRESH_TOKEN_TTL,
     emailUser: process.env.EMAIL_USER,
     emailPass: process.env.EMAIL_PASS,
+    corsOriginUrl: process.env.CORS_ORIGIN_URL
 }

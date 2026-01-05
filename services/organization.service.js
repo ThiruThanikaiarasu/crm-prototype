@@ -204,7 +204,7 @@ const sendInviteEmails = async (tenantId, members) => {
                 // Send email
                 const emailSent = await sendInviteEmail(
                     email,
-                    organization.title,
+                    "Datastack",
                     inviteToken,
                     role
                 )

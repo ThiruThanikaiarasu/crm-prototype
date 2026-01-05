@@ -3,6 +3,7 @@ const fs = require('fs')
 
 const transporter = require('../configurations/smtp.config')
 const { emailUser } = require('../configurations/env.config')
+const envConfig = require('../configurations/env.config')
 
 const sendOTP = (to, subject, otp) => {
     let template = fs.readFileSync(path.join(__dirname, '../templates', 'otpTemplate.html'), 'utf-8')
@@ -24,7 +25,7 @@ const sendInviteEmail = (to, organizationName, inviteToken, role) => {
         let template = fs.readFileSync(path.join(__dirname, '../templates', 'inviteTemplate.html'), 'utf-8')
 
         // Replace placeholders
-        const inviteLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/invite/accept?token=${inviteToken}`
+        const inviteLink = `${envConfig.corsOriginUrl || 'http://localhost:3000'}/invite/accept?token=${inviteToken}`
 
         const roleDisplayNames = {
             'super_admin': 'Super Admin',
@@ -32,10 +33,11 @@ const sendInviteEmail = (to, organizationName, inviteToken, role) => {
             'employee': 'Employee'
         }
 
-        template = template.replace('{{organizationName}}', organizationName)
-        template = template.replace('{{inviteLink}}', inviteLink)
-        template = template.replace('{{email}}', to)
-        template = template.replace('{{role}}', roleDisplayNames[role] || role)
+        template = template
+            .replace(/{{organizationName}}/g, organizationName)
+            .replace(/{{inviteLink}}/g, inviteLink)
+            .replace(/{{email}}/g, to)
+            .replace(/{{role}}/g, roleDisplayNames[role] || role)
 
         const attachments = [
             {

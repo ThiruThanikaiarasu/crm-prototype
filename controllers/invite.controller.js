@@ -39,7 +39,8 @@ const verifyInvite = async (request, response) => {
                 {
                     email: verification.data.email,
                     tenantId: verification.data.tenantId,
-                    role: verification.data.role
+                    role: verification.data.role,
+                    method: "viaMagicLink"
                 }
             )
         )
