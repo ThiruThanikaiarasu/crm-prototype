@@ -1,4 +1,5 @@
 const organizationModel = require('../models/organization.model')
+const organizationInviteModel = require('../models/organizationInvite.model')
 const userModel = require('../models/user.model')
 
 const getDomainFromEmail = (email) => {
@@ -38,8 +39,56 @@ const createAdminAndOrganization = async ({ title, email, firstName, lastName, p
     }
 }
 
+const inviteUser = async (tenantId, users) => {
+    try {
+        const userList = users.map(email => ({
+            email,
+        }))
+        const user = await organizationInviteModel.insertMany(userList)
+        inviteUsersToOrganization(tenantId, userList)
+        return user
+    } catch (error) {
+        console.error('Failed to invite user:', error)
+        throw error
+    }
+}
+
+const inviteUsersToOrganization = async (tenantId, users) => {
+    try {
+        if (!users || users.length === 0) return
+
+        console.log(`Starting to invite ${users.length} users for tenant ${tenantId}`)
+
+        const User = userModel(tenantId)
+
+        for (const user of users) {
+            try {
+                const password = Math.random().toString(36).slice(-8)
+
+                await User.create({
+                    firstName: user.firstName,
+                    lastName: user.lastName,
+                    email: user.email,
+                    password: password,
+                    role: 'employee',
+                    tenantId: tenantId
+                })
+
+                console.log(`Successfully invited user: ${user.email}`)
+            } catch (err) {
+                console.error(`Failed to invite user ${user.email}:`, err.message)
+            }
+        }
+        console.log('Finished processing user invitations')
+    } catch (error) {
+        console.error('Critical error in background invitation process:', error)
+    }
+}
+
 module.exports = {
     getDomainFromEmail,
     checkIfOrganizationExists,
     createAdminAndOrganization,
+    inviteUser,
+    inviteUsersToOrganization
 }

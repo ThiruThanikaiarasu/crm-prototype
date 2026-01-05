@@ -7,6 +7,8 @@ const required = [
     'JWT_REFRESH_SECRET',
     'ACCESS_TOKEN_TTL',
     'REFRESH_TOKEN_TTL',
+    'EMAIL_USER',
+    'EMAIL_PASS',
 ]
 
 required.forEach((variable) => {
@@ -23,4 +25,6 @@ module.exports = {
     refreshTokenSecret: process.env.JWT_REFRESH_SECRET,
     accessTtl: process.env.ACCESS_TOKEN_TTL,
     refreshTtl: process.env.REFRESH_TOKEN_TTL,
+    emailUser: process.env.EMAIL_USER,
+    emailPass: process.env.EMAIL_PASS,
 }
