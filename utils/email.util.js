@@ -16,30 +16,71 @@ const sendOTP = (to, subject, otp) => {
         },
     ]
 
-    sendEmail(to, subject, template, attachments)
+    return sendEmail(to, subject, template, attachments)
 }
 
-const sendEmail = (to, subject, template, attachments) => {
+const sendInviteEmail = (to, organizationName, inviteToken, role) => {
     try {
-        const mailOptions = {
-            from: emailUser,
-            to,
-            subject,
-            html: template,
-            attachments
+        let template = fs.readFileSync(path.join(__dirname, '../templates', 'inviteTemplate.html'), 'utf-8')
+
+        // Replace placeholders
+        const inviteLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/invite/accept?token=${inviteToken}`
+
+        const roleDisplayNames = {
+            'super_admin': 'Super Admin',
+            'admin': 'Admin',
+            'employee': 'Employee'
         }
 
-        transporter.sendMail(mailOptions, (error, info) => {
-            if (error) {
-                throw error
-            }
-            if (info) {
-                console.log(`Email sent successfully to ${to}`)
-            }
-        })
+        template = template.replace('{{organizationName}}', organizationName)
+        template = template.replace('{{inviteLink}}', inviteLink)
+        template = template.replace('{{email}}', to)
+        template = template.replace('{{role}}', roleDisplayNames[role] || role)
+
+        const attachments = [
+            {
+                filename: 'logo.png',
+                path: path.join(__dirname, '../assets/images/opportune_logo_png.png'),
+                cid: 'logo',
+            },
+        ]
+
+        return sendEmail(to, `You're invited to join ${organizationName}`, template, attachments)
     } catch (error) {
+        console.error('Error preparing invite email:', error)
         throw error
     }
 }
 
-sendOTP('thiruarasurani@gmail.com', 'OTP', '1234')
+const sendEmail = (to, subject, template, attachments) => {
+    return new Promise((resolve, reject) => {
+        try {
+            const mailOptions = {
+                from: emailUser,
+                to,
+                subject,
+                html: template,
+                attachments
+            }
+
+            transporter.sendMail(mailOptions, (error, info) => {
+                if (error) {
+                    console.error(`Failed to send email to ${to}:`, error)
+                    reject(error)
+                } else {
+                    console.log(`Email sent successfully to ${to}`)
+                    resolve(true)
+                }
+            })
+        } catch (error) {
+            console.error('Error in sendEmail:', error)
+            reject(error)
+        }
+    })
+}
+
+module.exports = {
+    sendOTP,
+    sendInviteEmail,
+    sendEmail
+}
