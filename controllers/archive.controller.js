@@ -3,8 +3,10 @@ const { ERROR_CODES } = require('../constants/error.constant')
 const {
     getArchivedLeads,
     getArchivedLeadById,
-    restoreLeadById,
-    permanentlyDeleteLeadById
+    getArchivedPipelines,
+    getArchivedPipelineById,
+    getArchivedCallLogs,
+    getArchivedCallLogById
 } = require('../services/archive.service')
 
 /**
@@ -102,22 +104,128 @@ const getArchivedLead = async (request, response) => {
     }
 }
 
-/**
- * Restore an archived lead
- */
-const restoreArchivedLead = async (request, response) => {
+const getAllArchivedPipelines = async (request, response) => {
+    try {
+        const { tenantId } = request.user
+        const {
+            page,
+            limit,
+            opportunityStage,
+            owner,
+            company,
+            sort,
+            order,
+            deletedBy,
+            deletedFrom,
+            deletedTo
+        } = request.query
+
+        const result = await getArchivedPipelines(tenantId, {
+            page,
+            limit,
+            opportunityStage,
+            owner,
+            company,
+            sort,
+            order,
+            deletedBy,
+            deletedFrom,
+            deletedTo
+        })
+
+        return response.status(200).send(
+            setResponseBody(
+                'Archived pipelines retrieved successfully',
+                null,
+                ERROR_CODES.SUCCESS,
+                result
+            )
+        )
+    } catch (error) {
+        return response.status(500).send(
+            setResponseBody(
+                error.message,
+                ERROR_CODES.SERVER_ERROR,
+                'server_error',
+                null
+            )
+        )
+    }
+}
+
+const getArchivedPipeline = async (request, response) => {
     try {
         const { tenantId } = request.user
         const { id } = request.params
 
-        await restoreLeadById(tenantId, id)
+        const pipeline = await getArchivedPipelineById(tenantId, id)
+
+        if (!pipeline) {
+            return response.status(404).send(
+                setResponseBody(
+                    'Archived pipeline not found',
+                    ERROR_CODES.PIPELINE_NOT_FOUND,
+                    'not_found',
+                    null
+                )
+            )
+        }
 
         return response.status(200).send(
             setResponseBody(
-                'Lead restored successfully',
+                'Archived pipeline retrieved successfully',
                 null,
                 ERROR_CODES.SUCCESS,
-                { restored: true }
+                pipeline
+            )
+        )
+    } catch (error) {
+        return response.status(500).send(
+            setResponseBody(
+                error.message,
+                ERROR_CODES.SERVER_ERROR,
+                'server_error',
+                null
+            )
+        )
+    }
+}
+
+const getAllArchivedCallLogs = async (request, response) => {
+    try {
+        const { tenantId } = request.user
+        const {
+            page,
+            limit,
+            lead,
+            outcome,
+            remarks,
+            sort,
+            order,
+            deletedBy,
+            deletedFrom,
+            deletedTo
+        } = request.query
+
+        const result = await getArchivedCallLogs(tenantId, {
+            page,
+            limit,
+            lead,
+            outcome,
+            remarks,
+            sort,
+            order,
+            deletedBy,
+            deletedFrom,
+            deletedTo
+        })
+
+        return response.status(200).send(
+            setResponseBody(
+                'Archived call logs retrieved successfully',
+                null,
+                ERROR_CODES.SUCCESS,
+                result
             )
         )
     } catch (error) {
@@ -133,21 +241,32 @@ const restoreArchivedLead = async (request, response) => {
 }
 
 /**
- * Permanently delete an archived lead
+ * Get single archived call log by ID
  */
-const permanentlyDeleteLead = async (request, response) => {
+const getArchivedCallLog = async (request, response) => {
     try {
         const { tenantId } = request.user
         const { id } = request.params
 
-        await permanentlyDeleteLeadById(tenantId, id)
+        const callLog = await getArchivedCallLogById(tenantId, id)
+
+        if (!callLog) {
+            return response.status(404).send(
+                setResponseBody(
+                    'Archived call log not found',
+                    ERROR_CODES.CALL_LOG_NOT_FOUND,
+                    'not_found',
+                    null
+                )
+            )
+        }
 
         return response.status(200).send(
             setResponseBody(
-                'Lead permanently deleted',
+                'Archived call log retrieved successfully',
                 null,
                 ERROR_CODES.SUCCESS,
-                { deleted: true }
+                callLog
             )
         )
     } catch (error) {
@@ -165,6 +284,10 @@ const permanentlyDeleteLead = async (request, response) => {
 module.exports = {
     getAllArchivedLeads,
     getArchivedLead,
-    restoreArchivedLead,
-    permanentlyDeleteLead
+
+    getAllArchivedPipelines,
+    getArchivedPipeline,
+
+    getAllArchivedCallLogs,
+    getArchivedCallLog
 }
