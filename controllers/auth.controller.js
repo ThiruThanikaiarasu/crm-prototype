@@ -12,9 +12,10 @@ const { setResponseBody } = require('../utils/responseFormatter.util')
 const bcrypt = require('bcryptjs')
 const { ERROR_CODES } = require('../constants/error.constant')
 const { getCookiesFromHeader } = require('../middlewares/auth.middleware')
+const { updateInvitedLinkStatus } = require('../services/organization.service')
 
 const signup = async (request, response) => {
-    const { firstName, lastName, email, password, role } = request.body
+    const { firstName, lastName, email, password, role, method } = request.body
 
     const tenantId = 'abcd'
 
@@ -55,6 +56,10 @@ const signup = async (request, response) => {
             role,
             tenantId,
         })
+
+        if (method == "viaMagicLink") {
+            await updateInvitedLinkStatus(tenantId,email)
+        }
 
         await generateAndSetTokens(
             response,

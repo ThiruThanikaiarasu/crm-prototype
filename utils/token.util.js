@@ -5,6 +5,10 @@ const {
     accessTtl,
     refreshTtl,
 } = require('../configurations/env.config')
+const organizationInviteModel = require('../models/organizationInvite.model')
+const ConflictError = require('../errors/ConflictError')
+const { ERROR_CODES } = require('../constants/error.constant')
+const { checkIfInviteAlreadyAccepted } = require('../services/invite.service')
 
 const ACCESS_TOKEN_TTL = accessTtl || '15m'
 const REFRESH_TOKEN_TTL = refreshTtl || '90d'
@@ -46,7 +50,7 @@ const generateInviteToken = ({ email, tenantId, inviteId, role }) => {
     )
 }
 
-const verifyInviteToken = (token) => {
+const verifyInviteToken = async (token) => {
     try {
         const decoded = jwt.verify(token, accessTokenSecret)
 
@@ -54,17 +58,38 @@ const verifyInviteToken = (token) => {
             throw new Error('Invalid token type')
         }
 
-        return {
-            valid: true,
-            data: decoded
+        const isInviteAccepted = await checkIfInviteAlreadyAccepted(
+            decoded.tenantId,
+            decoded.email
+        )
+
+        if (isInviteAccepted) {
+            throw new ConflictError(
+                409,
+                'Invite already accepted or rejected',
+                ERROR_CODES.INVITE_ALREADY_ACCEPTED,
+                'conflict'
+            )
         }
+
+        return decoded
     } catch (error) {
-        return {
-            valid: false,
-            error: error.message
+        if (
+            error.name === 'JsonWebTokenError' ||
+            error.name === 'TokenExpiredError'
+        ) {
+            throw new UnauthorizedError(
+                401,
+                'Invalid or expired invite token',
+                ERROR_CODES.INVALID_TOKEN,
+                'invalid_token'
+            )
         }
+
+        throw error
     }
 }
+
 
 const setTokenCookie = (response, cookieName, token) => {
     response.cookie(cookieName, token, options)

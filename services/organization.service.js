@@ -50,7 +50,6 @@ const inviteUser = async (tenantId, users) => {
 
         const invites = await OrganizationInvite.insertMany(userList)
 
-        // Send emails in background
         inviteUsersToOrganization(tenantId, userList)
 
         return invites
@@ -259,6 +258,21 @@ const getOrganizationMembers = async (tenantId) => {
     }
 }
 
+const updateInvitedLinkStatus = async (tenantId, email) => {
+    try {
+        const OrganizationInvite = organizationInviteModel(tenantId)
+        const invite = await OrganizationInvite.findOne({ email })
+        if (!invite) {
+            throw new Error('Invite not found')
+        }
+        invite.status = 'accepted'
+        await invite.save()
+    } catch (error) {
+        console.error('Error updating invite status:', error)
+        throw error
+    }
+}
+
 module.exports = {
     getDomainFromEmail,
     checkIfOrganizationExists,
@@ -267,5 +281,6 @@ module.exports = {
     inviteUsersToOrganization,
     checkInviteStatus,
     sendInviteEmails,
-    getOrganizationMembers
+    getOrganizationMembers,
+    updateInvitedLinkStatus
 }

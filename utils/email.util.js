@@ -42,7 +42,7 @@ const sendInviteEmail = (to, organizationName, inviteToken, role) => {
         const attachments = [
             {
                 filename: 'logo.png',
-                path: path.join(__dirname, '../assets/images/opportune_logo_png.png'),
+                path: path.join(__dirname, '../assets/images/Datasack_tech_logo.png'),
                 cid: 'logo',
             },
         ]

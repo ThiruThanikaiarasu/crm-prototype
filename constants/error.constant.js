@@ -71,6 +71,8 @@ const ERROR_CODES = {
     CALL_LOG_CREATED: '0301',
 
     PIPELINE_CREATED: '0601',
+
+    INVITE_ALREADY_ACCEPTED: '0701',
 }
 
 module.exports = {

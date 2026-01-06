@@ -18,12 +18,11 @@ const verifyInvite = async (request, response) => {
             )
         }
 
-        const verification = verifyInviteToken(token)
-
+        const verification =  await verifyInviteToken(token)
         if (!verification.valid) {
             return response.status(401).send(
                 setResponseBody(
-                    'Invalid or expired invite token',
+                  'Invalid or expired invite token',
                     ERROR_CODES.INVALID_TOKEN,
                     'invalid_token',
                     { error: verification.error }
@@ -45,11 +44,12 @@ const verifyInvite = async (request, response) => {
             )
         )
     } catch (error) {
-        return response.status(500).send(
+        console.log(error)
+        return response.status(error.statusCode || 500).send(
             setResponseBody(
-                error.message,
-                ERROR_CODES.SERVER_ERROR,
-                'server_error',
+                error.message || 'Internal Server Error',
+                error.errorCode || ERROR_CODES.INTERNAL_SERVER_ERROR,
+                error.errorType || 'internal_server_error',
                 null
             )
         )
