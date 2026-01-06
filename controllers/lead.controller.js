@@ -198,6 +198,7 @@ const deleteALeadById = async (request, response) => {
         }
 
         const { tenantId, userId } = request.user
+        console.log(userId)
         const { id } = request.params
 
         const lead = await deleteLeadById(tenantId, userId, id)

@@ -693,7 +693,7 @@ const updateLeadById = async (tenantId, id, payload) => {
                     }],
                     { session }
                 )
-                
+
                 // Link new contact to the lead
                 lead.contact = newContact._id
             }
@@ -704,7 +704,7 @@ const updateLeadById = async (tenantId, id, payload) => {
             const escapeRegex = value => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
             const leadsToProcess = []
-            
+
             // 1. Check for duplicates and filter them out
             for (const leadData of leads) {
                 const contactQuery = {
@@ -735,7 +735,7 @@ const updateLeadById = async (tenantId, id, payload) => {
                         // Log or ignore? ignoring as per "Intelligent Edit"
                     }
                 }
-                
+
                 if (!exists) {
                     leadsToProcess.push(leadData)
                 }
@@ -820,9 +820,10 @@ const deleteLeadById = async (tenantId, userId, id) => {
 
         lead.deleted = {
             isDeleted: true,
-            deletedAt: new Date(),
-            deletedBy: userId
+            at: new Date(),
+            by: userId
         }
+        console.log(lead)
         await lead.save({ session })
 
         if (lead.contact) {
