@@ -70,7 +70,8 @@ const searchLeadsByCompany = async (tenantId, companyId) => {
         {
             $match: {
                 company: new mongoose.Types.ObjectId(companyId),
-                'deleted.isDeleted': false
+                'deleted.isDeleted': false,
+                status: 'cold_email'
             }
         },
         {
