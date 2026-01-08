@@ -8,11 +8,6 @@ const createCallLogSchema = (tenantId) => {
                 ref: `${tenantId}_leads`,
                 required: [true, 'Lead is required']
             },
-            outcome: {
-                type: String,
-                enum: ['interested', 'not_interested', 'contacted', 'done'],
-                default: 'interested',
-            },
             followUp: {
                 type: Date,
                 required: [true, 'Follow up date is required']
@@ -46,6 +41,15 @@ const createCallLogSchema = (tenantId) => {
                     ref: `${tenantId}_users`,
                     select: false,
                 },
+                restoredAt: {
+                    type: Date,
+                    select: false,
+                },
+                restoredBy: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: `${tenantId}_users`,
+                    select: false,
+                }
             },
 
         },

@@ -15,10 +15,22 @@ const createLeadSchema = (tenantId) => {
             status: {
                 type: String,
                 enum: {
-                    values: ['new', 'qualified', 'contacted', 'done'],
+                    values: ['new', 'qualified', 'cold_email', 'called', 'converted', 'follow_up_needed', 'dropped'],
                     message: '{VALUE} is not a valid status',
                 },
                 default: 'new',
+            },
+            droppedReason: {
+                type: String,
+                required: function(){
+                    return this.status === 'dropped'
+                },
+                validate: {
+                    validator: function(v) {
+                        return v.length > 0
+                    },
+                    message: 'Dropped reason is required'
+                }
             },
             source: {
                 type: String,
@@ -53,6 +65,15 @@ const createLeadSchema = (tenantId) => {
                     ref: `${tenantId}_users`,
                     select: false,
                 },
+                restoredAt: {
+                    type: Date,
+                    select: false,
+                },
+                restoredBy: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: `${tenantId}_users`,
+                    select: false,
+                }
             },
         },
         {

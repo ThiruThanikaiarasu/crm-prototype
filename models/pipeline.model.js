@@ -60,6 +60,15 @@ const createPipelineSchema = (tenantId) => {
                     ref: `${tenantId}_users`,
                     select: false,
                 },
+                restoredAt: {
+                    type: Date,
+                    select: false,
+                },
+                restoredBy: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: `${tenantId}_users`,
+                    select: false,
+                }
             },
         },
         {

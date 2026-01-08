@@ -58,6 +58,13 @@ const createCompanyLeadSchema = (tenantId) => {
                     'Please fill a valid website address',
                 ],
             },
+            serviceName: {
+                type: String,
+                enum: {
+                    values: ['hiring_service', 'peo_and_eor', 'digital_marketing', 'digital_solutions'],
+                    message: '{VALUE} is not a valid service name',
+                },
+            },
             deleted: {
                 isDeleted: {
                     type: Boolean,
@@ -74,6 +81,15 @@ const createCompanyLeadSchema = (tenantId) => {
                     ref: `${tenantId}_users`,
                     select: false,
                 },
+                restoredAt: {
+                    type: Date,
+                    select: false,
+                },
+                restoredBy: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: `${tenantId}_users`,
+                    select: false,
+                }
             },
 
         },
