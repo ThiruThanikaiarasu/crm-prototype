@@ -1,7 +1,7 @@
 const express = require('express')
 const router = express.Router()
 
-const { createANewLead, getAll, getALeadById, updateALeadById, deleteALeadById } = require('../controllers/lead.controller')
+const { createANewLead, getAll, getALeadById, updateALeadById, deleteALeadById, restoreALeadById } = require('../controllers/lead.controller')
 const { validateCreateANewLeadLeadPayload } = require('../validators/lead.validator')
 const { verifyUser, allowRoles } = require('../middlewares/auth.middleware')
 const { validateObjectIdParam } = require('../validators/common.validator')
@@ -33,6 +33,16 @@ router.get(
     validateObjectIdParam,
 
     getALeadById,
+)
+
+router.patch(
+    '/:id/restore',
+
+    verifyUser,
+
+    validateObjectIdParam,
+
+    restoreALeadById,
 )
 
 router.patch(

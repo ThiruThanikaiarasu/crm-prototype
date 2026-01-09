@@ -535,3 +535,83 @@
  *               error: "server_error"
  *               data: null
  */
+
+/**
+ * @swagger
+ * /pipelines/{id}/restore:
+ *   patch:
+ *     summary: Restore a deleted pipeline
+ *     description: |
+ *       Restore a previously archived (soft-deleted) pipeline.
+ *     tags: [Pipelines]
+ *     security:
+ *       - bearerAuth: []
+ *
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: Pipeline ID to restore
+ *         schema:
+ *           type: string
+ *           example: "6956e6e6e0161b73d5ccdbc1"
+ *
+ *     responses:
+ *       200:
+ *         description: Pipeline restored successfully
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: "Pipeline restored successfully"
+ *               errorCode: null
+ *               error: "0000"
+ *               data: null
+ *
+ *       400:
+ *         description: Validation error — invalid or missing pipeline ID
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: "Invalid pipeline id"
+ *               errorCode: "1001"
+ *               error: "validation_error"
+ *               data: null
+ *
+ *       401:
+ *         description: Unauthorized — token missing, expired, or invalid
+ *         content:
+ *           application/json:
+ *             examples:
+ *               TokenExpired:
+ *                 value:
+ *                   message: "Session Expired"
+ *                   errorCode: "2003"
+ *                   error: "token_expired"
+ *                   data: null
+ *               AuthenticationError:
+ *                 value:
+ *                   message: "Session Expired"
+ *                   errorCode: "2010"
+ *                   error: "authentication_error"
+ *                   data: null
+ *
+ *       404:
+ *         description: Pipeline not found
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: "Pipeline not found"
+ *               errorCode: "PIPELINE_NOT_FOUND"
+ *               error: "not_found"
+ *               data: null
+ *
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: "Internal Server Error"
+ *               errorCode: "5001"
+ *               error: "internal_server_error"
+ *               data: null
+ */

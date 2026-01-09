@@ -1,6 +1,6 @@
 const { validationResult } = require("express-validator")
 const { ERROR_CODES } = require("../constants/error.constant")
-const { createCallLog, getAllCallLogs, getCallLogById, updateCallLog, deleteCallLogById, searchCompanies, searchLeadsByCompany } = require("../services/callLog.service")
+const { createCallLog, getAllCallLogs, getCallLogById, updateCallLog, deleteCallLogById, searchCompanies, searchLeadsByCompany, restoreCallLogById } = require("../services/callLog.service")
 const { setResponseBody } = require("../utils/responseFormatter.util")
 const NotFoundError = require("../errors/NotFoundError")
 
@@ -285,7 +285,48 @@ const searchLeadsByCompanyHandler = async (request, response) => {
         return response.status(error.statusCode || 500).send(
             setResponseBody(
                 error.message || 'Internal Server Error',
-                error.errorCode || ERROR_CODES.INTERNAL_SERVER_ERROR,
+                error.errorCode || ERROR_CODES.SERVER_ERROR,
+                error.errorType || 'internal_server_error',
+                null
+            )
+        )
+    }
+}
+
+const restoreACallLog = async (request, response) => {
+    try {
+        const errors = validationResult(request)
+        if (!errors.isEmpty()) {
+            return response
+                .status(400)
+                .send(
+                    setResponseBody(
+                        errors.array()[0].msg,
+                        ERROR_CODES.VALIDATION_ERROR,
+                        'validation_error',
+                        null,
+                    ),
+                )
+        }
+
+        const { tenantId, userId } = request.user
+        const { id } = request.params
+
+        await restoreCallLogById(tenantId, userId, id)
+
+        return response.status(200).send(
+            setResponseBody(
+                'Call log restored successfully',
+                null,
+                ERROR_CODES.SUCCESS,
+                null,
+            ),
+        )
+    } catch (error) {
+        return response.status(error.statusCode || 500).send(
+            setResponseBody(
+                error.message || 'Internal Server Error',
+                error.errorCode || ERROR_CODES.SERVER_ERROR,
                 error.errorType || 'internal_server_error',
                 null
             )
@@ -301,4 +342,5 @@ module.exports = {
     deleteACallLog,
     searchCompaniesHandler,
     searchLeadsByCompanyHandler,
+    restoreACallLog,
 }

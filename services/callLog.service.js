@@ -990,6 +990,32 @@ const deleteCallLogById = async (tenantId, userId, id) => {
     return callLog
 }
 
+const restoreCallLogById = async (tenantId, userId, id) => {
+    const CallLog = callLogModel(tenantId)
+    const result = await CallLog.updateOne(
+        {
+            _id: id,
+            'deleted.isDeleted': true
+        },
+        {
+            $set: {
+                'deleted.isDeleted': false,
+                'deleted.restoredAt': new Date(),
+                'deleted.restoredBy': userId
+            }
+        }
+    )
+
+    if (result.matchedCount === 0) {
+        throw new NotFoundError(
+            404,
+            'Call log not found',
+            ERROR_CODES.CALL_LOG_NOT_FOUND,
+            'not_found'
+        )
+    }
+}
+
 module.exports = {
     createCallLog,
     getAllCallLogs,
@@ -998,4 +1024,5 @@ module.exports = {
     deleteCallLogById,
     searchCompanies,
     searchLeadsByCompany,
+    restoreCallLogById
 }

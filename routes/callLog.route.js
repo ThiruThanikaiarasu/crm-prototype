@@ -2,7 +2,7 @@ const express = require('express')
 const router = express.Router()
 
 const { verifyUser, allowRoles } = require('../middlewares/auth.middleware')
-const { create, getAll, deleteACallLog, updateACallLog, getACallLog, searchCompaniesHandler, searchLeadsByCompanyHandler } = require('../controllers/callLog.controller')
+const { create, getAll, deleteACallLog, updateACallLog, getACallLog, searchCompaniesHandler, searchLeadsByCompanyHandler, restoreACallLog } = require('../controllers/callLog.controller')
 const { validateCreateCallLogPayload } = require('../validators/callLog.validator')
 const { validateObjectIdParam } = require('../validators/common.validator')
 const ROLES = require('../constants/role.constant')
@@ -40,6 +40,16 @@ router.get(
     verifyUser,
 
     getAll
+)
+
+router.patch(
+    '/:id/restore',
+
+    verifyUser,
+
+    validateObjectIdParam,
+
+    restoreACallLog
 )
 
 router.get(

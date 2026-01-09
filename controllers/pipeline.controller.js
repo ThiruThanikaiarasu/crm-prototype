@@ -6,7 +6,8 @@ const {
     getAllPipelines,
     getPipelineById,
     updatePipelineById,
-    deletePipelineById
+    deletePipelineById,
+    restorePipelineById
 } = require("../services/pipeline.service")
 
 const create = async (request, response) => {
@@ -234,10 +235,52 @@ const deleteAPipelineById = async (request, response) => {
     }
 }
 
+const restoreAPipelineById = async (request, response) => {
+    try {
+        const errors = validationResult(request)
+        if (!errors.isEmpty()) {
+            return response
+                .status(400)
+                .send(
+                    setResponseBody(
+                        errors.array()[0].msg,
+                        ERROR_CODES.VALIDATION_ERROR,
+                        'validation_error',
+                        null,
+                    ),
+                )
+        }
+
+        const { tenantId, userId } = request.user
+        const { id } = request.params
+
+        await restorePipelineById(tenantId, userId, id)
+
+        return response.status(200).send(
+            setResponseBody(
+                'Pipeline restored successfully',
+                null,
+                ERROR_CODES.SUCCESS,
+                null,
+            ),
+        )
+    } catch (error) {
+        return response.status(error.statusCode || 500).send(
+            setResponseBody(
+                error.message || 'Internal Server Error',
+                error.errorCode || ERROR_CODES.INTERNAL_SERVER_ERROR,
+                error.errorType || 'internal_server_error',
+                null
+            )
+        )
+    }
+}
+
 module.exports = {
     create,
     getAll,
     getAPipelineById,
     updateAPipelineById,
     deleteAPipelineById,
+    restoreAPipelineById
 }

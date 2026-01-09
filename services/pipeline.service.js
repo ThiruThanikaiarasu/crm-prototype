@@ -405,10 +405,37 @@ const deletePipelineById = async (tenantId, userId, id) => {
     return pipeline
 }
 
+const restorePipelineById = async (tenantId, userId, id) => {
+    const Pipeline = pipelineModel(tenantId)
+
+    const result = await Pipeline.updateOne({
+        _id: id,
+        'deleted.isDeleted': true
+    }, {
+        $set: {
+            'deleted.isDeleted': false,
+            'deleted.restoredAt': new Date(),
+            'deleted.restoredBy': userId
+        }
+    })
+
+    if (result.modifiedCount === 0) {
+        throw new NotFoundError(
+            404,
+            'Pipeline not found',
+            ERROR_CODES.PIPELINE_NOT_FOUND,
+            'not_found'
+        )
+    }
+
+    return result
+}
+
 module.exports = {
     createPipeline,
     getAllPipelines,
     getPipelineById,
     updatePipelineById,
-    deletePipelineById
+    deletePipelineById,
+    restorePipelineById
 }

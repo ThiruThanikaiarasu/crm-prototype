@@ -850,10 +850,72 @@ const deleteLeadById = async (tenantId, userId, id) => {
     }
 }
 
+const restoreLeadById = async (tenantId, userId, id) => {
+    const session = await mongoose.startSession()
+
+    try {
+        session.startTransaction()
+
+        const Lead = leadModel(tenantId)
+        const ContactLead = contactLeadModel(tenantId)
+
+        const result = await Lead.updateOne(
+            {
+                _id: id,
+                'deleted.isDeleted': true,
+            },
+            {
+                $set: {
+                    'deleted.isDeleted': false,
+                    'deleted.restoredAt': new Date(),
+                    'deleted.restoredBy': userId,
+                },
+            },
+            { session }
+        )
+
+        if (result.matchedCount === 0) {
+            throw new NotFoundError(
+                404,
+                'Lead not found or not deleted',
+                ERROR_CODES.LEAD_NOT_FOUND,
+                'not_found'
+            )
+        }
+
+        const lead = await Lead.aggregate([
+            { $match: { _id: new mongoose.Types.ObjectId(id) } }
+        ]).session(session)
+
+        if (lead[0]?.contact) {
+            await ContactLead.updateOne(
+                { _id: lead[0].contact },
+                {
+                    $set: {
+                        'deleted.isDeleted': false,
+                        'deleted.restoredAt': new Date(),
+                        'deleted.restoredBy': userId,
+                    },
+                },
+                { session }
+            )
+        }
+
+        await session.commitTransaction()
+        return true
+    } catch (error) {
+        await session.abortTransaction()
+        throw error
+    } finally {
+        session.endSession()
+    }
+}
+
 module.exports = {
     createLead,
     getAllLeads,
     getLeadById,
     updateLeadById,
     deleteLeadById,
+    restoreLeadById
 }
