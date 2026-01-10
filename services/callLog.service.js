@@ -288,10 +288,6 @@ const getAllCallLogs = async (
         matchStage.lead = new mongoose.Types.ObjectId(lead)
     }
 
-    if (outcome) {
-        matchStage.outcome = outcome
-    }
-
     if (remarks) {
         matchStage.remarks = { $regex: remarks, $options: 'i' }
     }
@@ -323,6 +319,12 @@ const getAllCallLogs = async (
             }
         },
         { $unwind: '$lead' },
+
+        ...(outcome ? [{
+            $match: {
+                'lead.status': outcome
+            }
+        }] : []),
 
         {
             $lookup: {
