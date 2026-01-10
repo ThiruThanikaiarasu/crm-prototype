@@ -22,8 +22,6 @@ const create = async (request, response) => {
 
         const {
             lead,
-            companyId,
-            leadName,
             outcome,
             followUp,
             remarks,
@@ -35,8 +33,6 @@ const create = async (request, response) => {
 
         const callLog = await createCallLog(tenantId, {
             lead,
-            companyId,
-            leadName,
             outcome,
             followUp,
             remarks,
