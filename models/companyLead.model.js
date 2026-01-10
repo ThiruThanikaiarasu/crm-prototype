@@ -58,7 +58,7 @@ const createCompanyLeadSchema = (tenantId) => {
                     'Please fill a valid website address',
                 ],
             },
-            serviceName: {
+            serviceType: {
                 type: String,
                 enum: {
                     values: ['hiring_service', 'peo_and_eor', 'digital_marketing', 'digital_solutions'],
@@ -104,8 +104,8 @@ const createCompanyLeadSchema = (tenantId) => {
         { collation: { locale: 'ar', strength: 1 } }
     )
 
-    companyLeadSchema.pre(/^find/, function() {
-        this.where({'deleted.isDeleted': false})
+    companyLeadSchema.pre(/^find/, function () {
+        this.where({ 'deleted.isDeleted': false })
     })
 
     return companyLeadSchema

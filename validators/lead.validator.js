@@ -28,7 +28,7 @@ const validateCreateANewLeadLeadPayload = [
         .isLength({ min: 2, max: 100 })
         .withMessage('Company name must be between 2 and 100 characters'),
 
-    body('company.serviceName')
+    body('company.serviceType')
         .optional({ nullable: true })
         .isIn(SERVICE_NAMES)
         .withMessage('Invalid service name'),

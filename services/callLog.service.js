@@ -1030,55 +1030,153 @@ const getPreviousCallLogDetails = async (tenantId, leadId) => {
     return result[0] || null
 }
 
+// const getCompanyCallLogActivityDetails = async (tenantId, companyId) => {
+//     console.log(companyId)
+//     const Lead = leadModel(tenantId)
+
+//     const result = await Lead.aggregate([
+//         {
+//             $match: {
+//                 company: new mongoose.Types.ObjectId(companyId),
+//                 'deleted.isDeleted': false
+//             }
+//         },
+
+//         // {
+//         //     $lookup: {
+//         //         from: `${tenantId}_callLogs`,
+//         //         let: { leadId: '$_id' },
+//         //         pipeline: [
+//         //             {
+//         //                 $match: {
+//         //                     $expr: {
+//         //                         $and: [
+//         //                             { $eq: ['$lead', '$$leadId'] },
+//         //                             { $eq: ['$deleted.isDeleted', false] }
+//         //                         ]
+//         //                     }
+//         //                 }
+//         //             },
+//         //             {
+//         //                 $sort: { createdAt: 1 }
+//         //             },
+//         //             {
+//         //                 $project: {
+//         //                     deleted: 0
+//         //                 }
+//         //             }
+//         //         ],
+//         //         as: 'callLogs'
+//         //     }
+//         // },
+
+//         // {
+//         //     $project: {
+//         //         deleted: 0
+//         //     }
+//         // }
+//     ])
+
+//     return result
+// }
 const getCompanyCallLogActivityDetails = async (tenantId, companyId) => {
-    console.log(tenantId, companyId)
-    const Lead = leadModel(tenantId)
+        const Lead = leadModel(tenantId);
+    const CallLog = callLogModel(tenantId);
 
-    const result = await Lead.aggregate([
-        {
-            $match: {
-                company: new mongoose.Types.ObjectId(companyId),
-                'deleted.isDeleted': false
-            }
-        },
-
-        {
-            $lookup: {
-                from: `${tenantId}_callLogs`,
-                let: { leadId: '$_id' },
-                pipeline: [
-                    {
-                        $match: {
-                            $expr: {
-                                $and: [
-                                    { $eq: ['$lead', '$$leadId'] },
-                                    { $eq: ['$deleted.isDeleted', false] }
-                                ]
-                            }
-                        }
+    try {
+        const callLogs = await CallLog.aggregate([
+            // Step 1: Lookup the lead details
+            {
+                $lookup: {
+                    from: `${tenantId}_leads`,
+                    localField: 'lead',
+                    foreignField: '_id',
+                    as: 'leadDetails'
+                }
+            },
+            // Step 2: Unwind lead details
+            {
+                $unwind: {
+                    path: '$leadDetails',
+                    preserveNullAndEmptyArrays: false
+                }
+            },
+            // Step 3: Filter by company ID and non-deleted
+            {
+                $match: {
+                    'leadDetails.company': new mongoose.Types.ObjectId(companyId),
+                    'deleted.isDeleted': false
+                }
+            },
+            // Step 4: Lookup company details from lead.company
+            {
+                $lookup: {
+                    from: `${tenantId}_companyleads`,
+                    localField: 'leadDetails.company',
+                    foreignField: '_id',
+                    as: 'leadDetails.company'
+                }
+            },
+            // Step 5: Lookup contact details from lead.contact
+            {
+                $lookup: {
+                    from: `${tenantId}_contactleads`,
+                    localField: 'leadDetails.contact',
+                    foreignField: '_id',
+                    as: 'leadDetails.contact'
+                }
+            },
+            // Step 6: Lookup lead createdBy user
+            {
+                $lookup: {
+                    from: `${tenantId}_users`,
+                    localField: 'leadDetails.createdBy',
+                    foreignField: '_id',
+                    as: 'leadDetails.createdBy'
+                }
+            },
+            // Step 7: Unwind the lookups (convert arrays to objects)
+            {
+                $addFields: {
+                    'leadDetails.company': {
+                        $arrayElemAt: ['$leadDetails.company', 0]
                     },
-                    {
-                        $sort: { createdAt: 1 }
+                    'leadDetails.contact': {
+                        $arrayElemAt: ['$leadDetails.contact', 0]
                     },
-                    {
-                        $project: {
-                            deleted: 0
-                        }
+                    'leadDetails.createdBy': {
+                        $arrayElemAt: ['$leadDetails.createdBy', 0]
                     }
-                ],
-                as: 'callLogs'
+                }
+            },
+            // Step 8: Sort by call start time (ascending)
+            {
+                $sort: {
+                    callStartTime: 1
+                }
+            },
+            // Step 9: Project the final structure (optional - to clean up)
+            {
+                $project: {
+                    _id: 1,
+                    lead: 1,
+                    followUp: 1,
+                    remarks: 1,
+                    callStartTime: 1,
+                    callDuration: 1,
+                    createdAt: 1,
+                    updatedAt: 1,
+                    leadDetails: 1
+                }
             }
-        },
+        ]);
 
-        {
-            $project: {
-                deleted: 0
-            }
-        }
-    ])
-
-    return result
+        return callLogs;
+    } catch (error) {
+        throw error;
+    }
 }
+
 
 module.exports = {
     createCallLog,
