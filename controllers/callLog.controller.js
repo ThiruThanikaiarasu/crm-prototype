@@ -1,6 +1,6 @@
 const { validationResult } = require("express-validator")
 const { ERROR_CODES } = require("../constants/error.constant")
-const { createCallLog, getAllCallLogs, getCallLogById, updateCallLog, deleteCallLogById, searchCompanies, searchLeadsByCompany, restoreCallLogById } = require("../services/callLog.service")
+const { createCallLog, getAllCallLogs, getCallLogById, updateCallLog, deleteCallLogById, searchCompanies, searchLeads, restoreCallLogById } = require("../services/callLog.service")
 const { setResponseBody } = require("../utils/responseFormatter.util")
 const NotFoundError = require("../errors/NotFoundError")
 
@@ -54,7 +54,6 @@ const create = async (request, response) => {
             ),
         )
     } catch (error) {
-        console.log(error)
         return response.status(error.statusCode || 500).send(
             setResponseBody(
                 error.message || 'Internal Server Error',
@@ -266,12 +265,11 @@ const searchCompaniesHandler = async (request, response) => {
     }
 }
 
-const searchLeadsByCompanyHandler = async (request, response) => {
+const searchLeadsForCallLogHandler = async (request, response) => {
     try {
         const { tenantId } = request.user
-        const { companyId } = request.query
 
-        const leads = await searchLeadsByCompany(tenantId, companyId)
+        const leads = await searchLeads(tenantId)
 
         return response.status(200).send(
             setResponseBody(
@@ -341,6 +339,6 @@ module.exports = {
     updateACallLog,
     deleteACallLog,
     searchCompaniesHandler,
-    searchLeadsByCompanyHandler,
+    searchLeadsForCallLogHandler,
     restoreACallLog,
 }

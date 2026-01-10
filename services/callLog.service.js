@@ -59,19 +59,17 @@ const searchCompanies = async (tenantId, { search = '', page = 1, limit = 10 } =
 /**
  * Search leads by company ID
  */
-const searchLeadsByCompany = async (tenantId, companyId) => {
-    if (!companyId) {
-        throw new ValidationError(400, 'Company ID is required', ERROR_CODES.VALIDATION_ERROR, 'validation_error')
-    }
+const searchLeads = async (tenantId) => {
 
     const Lead = leadModel(tenantId)
 
     const leads = await Lead.aggregate([
         {
             $match: {
-                company: new mongoose.Types.ObjectId(companyId),
                 'deleted.isDeleted': false,
-                status: 'cold_email'
+                status: {
+                    $nin: ['new', 'qualified', 'dropped']
+                }
             }
         },
         {
@@ -97,6 +95,32 @@ const searchLeadsByCompany = async (tenantId, companyId) => {
         {
             $unwind: {
                 path: '$contact',
+                preserveNullAndEmptyArrays: true
+            }
+        },
+        {
+            $lookup: {
+                from: `${tenantId}_companyleads`,
+                let: { companyId: '$company' },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $and: [
+                                    { $eq: ['$_id', '$$companyId'] },
+                                    { $eq: ['$deleted.isDeleted', false] }
+                                ]
+                            }
+                        }
+                    },
+                    { $project: { deleted: 0 } }
+                ],
+                as: 'company'
+            }
+        },
+        {
+            $unwind: {
+                path: '$company',
                 preserveNullAndEmptyArrays: true
             }
         },
@@ -1023,6 +1047,6 @@ module.exports = {
     updateCallLog,
     deleteCallLogById,
     searchCompanies,
-    searchLeadsByCompany,
+    searchLeads,
     restoreCallLogById
 }

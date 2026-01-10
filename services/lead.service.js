@@ -767,10 +767,8 @@ const updateLeadById = async (tenantId, id, payload) => {
         if (source !== undefined) lead.source = source
         if (followUp !== undefined) lead.followUp = followUp
         if (priority !== undefined) lead.priority = priority
-
         if (status !== undefined) {
             lead.status = status
-
             if (status === 'dropped') {
                 lead.droppedReason = droppedReason ?? lead.droppedReason
             } else {
@@ -821,7 +819,6 @@ const deleteLeadById = async (tenantId, userId, id) => {
             at: new Date(),
             by: userId
         }
-        console.log(lead)
         await lead.save({ session })
 
         if (lead.contact) {

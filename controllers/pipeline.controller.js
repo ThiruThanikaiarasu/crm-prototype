@@ -7,7 +7,8 @@ const {
     getPipelineById,
     updatePipelineById,
     deletePipelineById,
-    restorePipelineById
+    restorePipelineById,
+    searchCompanyForPipeline
 } = require("../services/pipeline.service")
 
 const create = async (request, response) => {
@@ -276,11 +277,38 @@ const restoreAPipelineById = async (request, response) => {
     }
 }
 
+const searchCompanyForPipelineHandler = async (request, response) => {
+    try {
+        const { tenantId } = request.user
+
+        const leads = await searchCompanyForPipeline(tenantId)
+
+        return response.status(200).send(
+            setResponseBody(
+                'Leads fetched successfully',
+                null,
+                ERROR_CODES.SUCCESS,
+                leads,
+            ),
+        )
+    } catch (error) {
+        return response.status(error.statusCode || 500).send(
+            setResponseBody(
+                error.message || 'Internal Server Error',
+                error.errorCode || ERROR_CODES.INTERNAL_SERVER_ERROR,
+                error.errorType || 'internal_server_error',
+                null
+            )
+        )
+    }
+}
+
 module.exports = {
     create,
     getAll,
     getAPipelineById,
     updateAPipelineById,
     deleteAPipelineById,
-    restoreAPipelineById
+    restoreAPipelineById,
+    searchCompanyForPipelineHandler,
 }

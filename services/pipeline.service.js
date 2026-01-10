@@ -431,11 +431,78 @@ const restorePipelineById = async (tenantId, userId, id) => {
     return result
 }
 
+const searchCompanyForPipeline = async (tenantId, search) => {
+    const CompanyLead = companyLeadModel(tenantId)
+
+    const companies = await CompanyLead.aggregate([
+        /* -------------------- Base company filter -------------------- */
+        {
+            $match: {
+                'deleted.isDeleted': false,
+                ...(search && {
+                    name: { $regex: search, $options: 'i' }
+                })
+            }
+        },
+
+        /* -------------------- Lookup qualifying leads -------------------- */
+        {
+            $lookup: {
+                from: `${tenantId}_leads`,
+                let: { companyId: '$_id' },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $and: [
+                                    { $eq: ['$company', '$$companyId'] },
+                                    { $eq: ['$deleted.isDeleted', false] },
+                                    {
+                                        $in: [
+                                            '$status',
+                                            ['promoted_to_meeting', 'conversion_in_progress']
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        $project: {
+                            _id: 1,
+                            status: 1
+                        }
+                    }
+                ],
+                as: 'activeLeads'
+            }
+        },
+
+        {
+            $match: {
+                'activeLeads.0': { $exists: true }
+            }
+        },
+
+        {
+            $project: {
+                _id:1,
+                name:1,
+                activeLeads: 1
+            }
+        }
+    ])
+
+    return companies
+}
+
+
 module.exports = {
     createPipeline,
     getAllPipelines,
     getPipelineById,
     updatePipelineById,
     deletePipelineById,
-    restorePipelineById
+    restorePipelineById,
+    searchCompanyForPipeline
 }
