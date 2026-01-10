@@ -101,7 +101,7 @@ const createLead = async (payload, tenantId, userId) => {
             }
 
             const contactsToInsert = leadsPayload.map(leadData => {
-                const { status, source, followUp, priority, ...contactInfo } = leadData
+                const { status, source, followUp, priority, droppedReason, ...contactInfo } = leadData
                 return contactInfo
             })
 
@@ -116,12 +116,11 @@ const createLead = async (payload, tenantId, userId) => {
                     company: companyLead._id,
                     contact: contactLead._id,
                     status: originalLead.status || null,
-                    source: originalLead.source || null,
-                    status: originalLead.status || null,
+                    droppedReason: originalLead.droppedReason || null,
                     source: originalLead.source || null,
                     followUp: originalLead.followUp || null,
                     priority: originalLead.priority || 1,
-                    userId
+                    createdBy: userId
                 }
             })
 
@@ -635,7 +634,7 @@ const updateLeadById = async (tenantId, id, payload) => {
             )
         }
 
-        const { company, leads, name, email, phone, status, source, followUp, priority } = payload
+        const { company, leads, name, email, phone, status, source, followUp, priority, droppedReason } = payload
 
         if (company && Object.keys(company).length > 0) {
             const companyUpdateData = {}
@@ -678,34 +677,27 @@ const updateLeadById = async (tenantId, id, payload) => {
 
         if (Object.keys(contactUpdateData).length > 0) {
             if (lead.contact) {
-                // Update existing contact
                 await ContactLead.findByIdAndUpdate(
                     lead.contact,
                     { $set: contactUpdateData },
                     { session, new: true }
                 )
             } else {
-                // Create NEW contact if lead doesn't have one
                 const [newContact] = await ContactLead.create(
                     [{
                         ...contactUpdateData,
-                        // Ensure required fields are present or handle specifically if needed (validation handles this usually)
                     }],
                     { session }
                 )
 
-                // Link new contact to the lead
                 lead.contact = newContact._id
             }
         }
 
-        // Handle creation of new leads (contacts) if provided
         if (leads && Array.isArray(leads) && leads.length > 0) {
             const escapeRegex = value => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
             const leadsToProcess = []
-
-            // 1. Check for duplicates and filter them out
             for (const leadData of leads) {
                 const contactQuery = {
                     'deleted.isDeleted': false,
@@ -732,7 +724,6 @@ const updateLeadById = async (tenantId, id, payload) => {
                     const existingContact = await ContactLead.findOne(contactQuery).session(session)
                     if (existingContact) {
                         exists = true
-                        // Log or ignore? ignoring as per "Intelligent Edit"
                     }
                 }
 
@@ -742,33 +733,29 @@ const updateLeadById = async (tenantId, id, payload) => {
             }
 
             if (leadsToProcess.length > 0) {
-                // 2. Prepare contacts for insertion
                 const contactsToInsert = leadsToProcess.map(leadData => {
-                    const { status, source, followUp, priority, ...contactInfo } = leadData
+                    const { status, source, followUp, priority, droppedReason, ...contactInfo } = leadData
                     return contactInfo
                 })
-
-                // 3. Insert new contacts
                 const insertedContacts = await ContactLead.insertMany(
                     contactsToInsert,
                     { session }
                 )
 
-                // 4. Prepare leads for insertion (linking to EXISTING company)
                 const leadsToInsert = insertedContacts.map((contactLead, index) => {
                     const originalLead = leadsToProcess[index]
                     return {
-                        company: lead.company, // Use existing company ID
+                        company: lead.company,
                         contact: contactLead._id,
                         status: originalLead.status || 'new',
+                        droppedReason: originalLead.droppedReason ?? undefined,
                         source: originalLead.source || null,
                         followUp: originalLead.followUp || null,
                         priority: originalLead.priority || 1,
-                        owner: lead.owner // Proactively assigning existing lead's owner
+                        createdBy: lead.owner
                     }
                 })
 
-                // 5. Insert new leads
                 await Lead.create(
                     leadsToInsert,
                     { session }
@@ -780,6 +767,17 @@ const updateLeadById = async (tenantId, id, payload) => {
         if (source !== undefined) lead.source = source
         if (followUp !== undefined) lead.followUp = followUp
         if (priority !== undefined) lead.priority = priority
+
+        if (status !== undefined) {
+            lead.status = status
+
+            if (status === 'dropped') {
+                lead.droppedReason = droppedReason ?? lead.droppedReason
+            } else {
+                lead.droppedReason = undefined
+            }
+        }
+
 
         await lead.save({ session })
 
