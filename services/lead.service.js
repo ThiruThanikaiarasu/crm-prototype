@@ -251,9 +251,10 @@ const getAllLeads = async (
         matchConditions.priority = Number(priority)
     }
 
-    if (serviceType) {
-        matchConditions.serviceType = serviceType
-    }
+    // REMOVED: serviceType from here as it's not in the Lead collection
+    // if (serviceType) {
+    //     matchConditions.serviceType = serviceType
+    // }
 
     const pipeline = [
         {
@@ -307,12 +308,19 @@ const getAllLeads = async (
     ]
 
     const postLookupMatch = {}
+
     if (company) {
         postLookupMatch['company.name'] = { $regex: company, $options: 'i' }
     }
+
     if (contact) {
         postLookupMatch['contact.name'] = { $regex: contact, $options: 'i' }
     }
+
+    if (serviceType) {
+        postLookupMatch['company.serviceType'] = serviceType
+    }
+
     if (Object.keys(postLookupMatch).length > 0) {
         pipeline.push({
             $match: postLookupMatch
@@ -329,7 +337,7 @@ const getAllLeads = async (
     })
 
     const allowedSortFields = ['createdAt', 'matchedLeadsCount']
-    const sortField = sort === 'createdAt' ? 'maxCreatedAt' : 'matchedLeadsCount' // Simplified sort strategy
+    const sortField = sort === 'createdAt' ? 'maxCreatedAt' : 'matchedLeadsCount'
     const sortOrder = order === 'asc' ? 1 : -1
     const sortObject = { [sortField]: sortOrder }
 
