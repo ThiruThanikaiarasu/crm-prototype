@@ -15,7 +15,7 @@ const createLeadSchema = (tenantId) => {
             status: {
                 type: String,
                 enum: {
-                    values: ['new', 'qualified', 'cold_email', 'interested', 'not_interested', 'follow_up_needed', 'promoted_to_meeting', 'conversion_in_progress', 'dropped'],
+                    values: ['new', 'qualified', 'contacted_by_email', 'interested', 'not_interested', 'follow_up_needed', 'promoted_to_meeting', 'conversion_in_progress', 'dropped'],
                     message: '{VALUE} is not a valid status',
                 },
                 default: 'new',

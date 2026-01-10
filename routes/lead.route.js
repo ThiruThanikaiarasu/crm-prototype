@@ -30,7 +30,7 @@ router.get(
 
     verifyUser,
 
-    validateObjectIdParam,
+    validateObjectIdParam('id'),
 
     getALeadById,
 )
@@ -40,7 +40,7 @@ router.patch(
 
     verifyUser,
 
-    validateObjectIdParam,
+    validateObjectIdParam('id'),
 
     restoreALeadById,
 )
@@ -50,7 +50,7 @@ router.patch(
 
     verifyUser,
 
-    validateObjectIdParam,
+    validateObjectIdParam('id'),
 
     updateALeadById,
 )
@@ -62,7 +62,7 @@ router.delete(
 
     allowRoles(ROLES.SUPER_ADMIN, ROLES.ADMIN),
 
-    validateObjectIdParam,
+    validateObjectIdParam('id'),
 
     deleteALeadById,
 )

@@ -1,6 +1,6 @@
 const { validationResult } = require("express-validator")
 const { ERROR_CODES } = require("../constants/error.constant")
-const { createCallLog, getAllCallLogs, getCallLogById, updateCallLog, deleteCallLogById, searchCompanies, searchLeads, restoreCallLogById } = require("../services/callLog.service")
+const { createCallLog, getAllCallLogs, getCallLogById, updateCallLog, deleteCallLogById, searchCompanies, searchLeads, restoreCallLogById, getPreviousCallLogDetails, getCompanyCallLogActivityDetails } = require("../services/callLog.service")
 const { setResponseBody } = require("../utils/responseFormatter.util")
 const NotFoundError = require("../errors/NotFoundError")
 
@@ -328,6 +328,96 @@ const restoreACallLog = async (request, response) => {
     }
 }
 
+const getPreviousCallLog = async (request, response) => {
+    try {
+        const errors = validationResult(request)
+        if (!errors.isEmpty()) {
+            return response
+                .status(400)
+                .send(
+                    setResponseBody(
+                        errors.array()[0].msg,
+                        ERROR_CODES.VALIDATION_ERROR,
+                        'validation_error',
+                        null,
+                    ),
+                )
+        }
+
+        const { tenantId } = request.user
+        const { leadId } = request.params
+
+        const previousCallLog = await getPreviousCallLogDetails(tenantId, leadId)
+
+        if (!previousCallLog) {
+            throw new NotFoundError(404, 'Previous call log not found', ERROR_CODES.PREVIOUS_CALL_LOG_NOT_FOUND, 'not_found')
+        }
+
+        return response.status(200).send(
+            setResponseBody(
+                'Previous call log fetched successfully',
+                null,
+                ERROR_CODES.SUCCESS,
+                previousCallLog,
+            ),
+        )
+    } catch (error) {
+        return response.status(error.statusCode || 500).send(
+            setResponseBody(
+                error.message || 'Internal Server Error',
+                error.errorCode || ERROR_CODES.SERVER_ERROR,
+                error.errorType || 'internal_server_error',
+                null
+            )
+        )
+    }
+}
+
+const getCompanyCallLogActivity = async (request, response) => {
+    try {
+        const errors = validationResult(request)
+        if (!errors.isEmpty()) {
+            return response
+                .status(400)
+                .send(
+                    setResponseBody(
+                        errors.array()[0].msg,
+                        ERROR_CODES.VALIDATION_ERROR,
+                        'validation_error',
+                        null,
+                    ),
+                )
+        }
+
+        const { tenantId } = request.user
+        const { companyId } = request.params
+
+        const companyCallLogActivity = await getCompanyCallLogActivityDetails(tenantId, companyId)
+
+        if (!companyCallLogActivity) {
+            throw new NotFoundError(404, 'Company call log activity not found', ERROR_CODES.COMPANY_CALL_LOG_ACTIVITY_NOT_FOUND, 'not_found')
+        }
+
+        return response.status(200).send(
+            setResponseBody(
+                'Company call log activity fetched successfully',
+                null,
+                ERROR_CODES.SUCCESS,
+                companyCallLogActivity,
+            ),
+        )
+    } catch (error) {
+        return response.status(error.statusCode || 500).send(
+            setResponseBody(
+                error.message || 'Internal Server Error',
+                error.errorCode || ERROR_CODES.SERVER_ERROR,
+                error.errorType || 'internal_server_error',
+                null
+            )
+        )
+    }
+}
+
 module.exports = {
     create,
     getAll,
@@ -337,4 +427,6 @@ module.exports = {
     searchCompaniesHandler,
     searchLeadsForCallLogHandler,
     restoreACallLog,
+    getPreviousCallLog,
+    getCompanyCallLogActivity
 }

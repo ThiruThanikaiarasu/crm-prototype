@@ -956,6 +956,130 @@ const restoreCallLogById = async (tenantId, userId, id) => {
     }
 }
 
+const getPreviousCallLogDetails = async (tenantId, leadId) => {
+    const CallLog = callLogModel(tenantId)
+    console.log(leadId)
+    const result = await CallLog.aggregate([
+        {
+            $match: {
+                lead: new mongoose.Types.ObjectId(leadId),
+                'deleted.isDeleted': false
+            }
+        },
+        {
+            $sort: { createdAt: -1 }
+        },
+        {
+            $limit: 1
+        },
+
+        {
+            $lookup: {
+                from: `${tenantId}_leads`,
+                localField: 'lead',
+                foreignField: '_id',
+                as: 'lead'
+            }
+        },
+        {
+            $unwind: '$lead'
+        },
+
+        {
+            $lookup: {
+                from: `${tenantId}_contactLeads`,
+                let: { contactId: '$lead.contact' },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $and: [
+                                    { $eq: ['$_id', '$$contactId'] },
+                                    { $eq: ['$deleted.isDeleted', false] }
+                                ]
+                            }
+                        }
+                    }
+                ],
+                as: 'lead.contact'
+            }
+        },
+        {
+            $unwind: {
+                path: '$lead.contact',
+                preserveNullAndEmptyArrays: true
+            }
+        },
+
+        {
+            $addFields: {
+                'lead.name': '$lead.contact.name',
+                'lead.email': '$lead.contact.email',
+                'lead.phone': '$lead.contact.phone'
+            }
+        },
+        {
+            $project: {
+                deleted: 0,
+                'lead.deleted': 0,
+                'lead.contact.deleted': 0
+            }
+        }
+    ])
+
+    return result[0] || null
+}
+
+const getCompanyCallLogActivityDetails = async (tenantId, companyId) => {
+    console.log(tenantId, companyId)
+    const Lead = leadModel(tenantId)
+
+    const result = await Lead.aggregate([
+        {
+            $match: {
+                company: new mongoose.Types.ObjectId(companyId),
+                'deleted.isDeleted': false
+            }
+        },
+
+        {
+            $lookup: {
+                from: `${tenantId}_callLogs`,
+                let: { leadId: '$_id' },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $and: [
+                                    { $eq: ['$lead', '$$leadId'] },
+                                    { $eq: ['$deleted.isDeleted', false] }
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        $sort: { createdAt: 1 }
+                    },
+                    {
+                        $project: {
+                            deleted: 0
+                        }
+                    }
+                ],
+                as: 'callLogs'
+            }
+        },
+
+        {
+            $project: {
+                deleted: 0
+            }
+        }
+    ])
+
+    return result
+}
+
 module.exports = {
     createCallLog,
     getAllCallLogs,
@@ -964,5 +1088,7 @@ module.exports = {
     deleteCallLogById,
     searchCompanies,
     searchLeads,
-    restoreCallLogById
+    restoreCallLogById,
+    getPreviousCallLogDetails,
+    getCompanyCallLogActivityDetails
 }

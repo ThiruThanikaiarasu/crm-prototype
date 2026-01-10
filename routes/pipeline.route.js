@@ -38,7 +38,7 @@ router.get(
 
     verifyUser,
 
-    validateObjectIdParam,
+    validateObjectIdParam('id'),
 
     getAPipelineById
 )
@@ -48,7 +48,7 @@ router.patch(
 
     verifyUser,
 
-    validateObjectIdParam,
+    validateObjectIdParam('id'),
 
     restoreAPipelineById
 )
@@ -58,7 +58,7 @@ router.patch(
 
     verifyUser,
 
-    validateObjectIdParam,
+    validateObjectIdParam('id'),
 
     updateAPipelineById
 )
@@ -70,7 +70,7 @@ router.delete(
 
     allowRoles(ROLES.SUPER_ADMIN, ROLES.ADMIN),
 
-    validateObjectIdParam,
+    validateObjectIdParam('id'),
 
     deleteAPipelineById
 )

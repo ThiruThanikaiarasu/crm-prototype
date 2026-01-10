@@ -3,7 +3,7 @@ const { body } = require('express-validator')
 const LEAD_STATUSES = [
     'new',
     'qualified',
-    'cold_email',
+    'contacted_by_email',
     'interested',
     'not_interested',
     'follow_up_needed',

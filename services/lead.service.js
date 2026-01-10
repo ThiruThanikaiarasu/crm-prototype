@@ -906,6 +906,12 @@ const restoreLeadById = async (tenantId, userId, id) => {
     }
 }
 
+const getPreviousCallLogDetails = async (tenantId, id) => {
+    const Lead = leadModel(tenantId)
+
+    return lead[0]
+}
+
 module.exports = {
     createLead,
     getAllLeads,
