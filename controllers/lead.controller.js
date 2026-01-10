@@ -58,6 +58,7 @@ const getAll = async (request, response) => {
             sort,
             order,
             followUp,
+            serviceType,
         } = request.query
 
         const result = await getAllLeads(tenantId, {
@@ -70,6 +71,7 @@ const getAll = async (request, response) => {
             sort,
             order,
             followUp,
+            serviceType,
         })
 
         return response.status(200).send(

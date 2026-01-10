@@ -971,9 +971,9 @@ const getPreviousCallLogDetails = async (tenantId, leadId) => {
         {
             $sort: { createdAt: -1 }
         },
-        {
-            $limit: 1
-        },
+        // {
+        //     $limit: 1
+        // },
 
         {
             $lookup: {
@@ -1029,60 +1029,10 @@ const getPreviousCallLogDetails = async (tenantId, leadId) => {
         }
     ])
 
-    return result[0] || null
+    return result
 }
 
-// const getCompanyCallLogActivityDetails = async (tenantId, companyId) => {
-//     console.log(companyId)
-//     const Lead = leadModel(tenantId)
-
-//     const result = await Lead.aggregate([
-//         {
-//             $match: {
-//                 company: new mongoose.Types.ObjectId(companyId),
-//                 'deleted.isDeleted': false
-//             }
-//         },
-
-//         // {
-//         //     $lookup: {
-//         //         from: `${tenantId}_callLogs`,
-//         //         let: { leadId: '$_id' },
-//         //         pipeline: [
-//         //             {
-//         //                 $match: {
-//         //                     $expr: {
-//         //                         $and: [
-//         //                             { $eq: ['$lead', '$$leadId'] },
-//         //                             { $eq: ['$deleted.isDeleted', false] }
-//         //                         ]
-//         //                     }
-//         //                 }
-//         //             },
-//         //             {
-//         //                 $sort: { createdAt: 1 }
-//         //             },
-//         //             {
-//         //                 $project: {
-//         //                     deleted: 0
-//         //                 }
-//         //             }
-//         //         ],
-//         //         as: 'callLogs'
-//         //     }
-//         // },
-
-//         // {
-//         //     $project: {
-//         //         deleted: 0
-//         //     }
-//         // }
-//     ])
-
-//     return result
-// }
 const getCompanyCallLogActivityDetails = async (tenantId, companyId) => {
-        const Lead = leadModel(tenantId);
     const CallLog = callLogModel(tenantId);
 
     try {
@@ -1154,7 +1104,8 @@ const getCompanyCallLogActivityDetails = async (tenantId, companyId) => {
             // Step 8: Sort by call start time (ascending)
             {
                 $sort: {
-                    callStartTime: 1
+                    updatedAt: -1,
+                    createdAt: -1,
                 }
             },
             // Step 9: Project the final structure (optional - to clean up)

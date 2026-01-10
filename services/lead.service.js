@@ -212,6 +212,7 @@ const getAllLeads = async (
         order = 'desc',
         followUp,
         priority,
+        serviceType,
     } = {}
 ) => {
     const Lead = leadModel(tenantId)
@@ -248,6 +249,10 @@ const getAllLeads = async (
 
     if (priority) {
         matchConditions.priority = Number(priority)
+    }
+
+    if (serviceType) {
+        matchConditions.serviceType = serviceType
     }
 
     const pipeline = [
