@@ -1015,16 +1015,17 @@ const getPreviousCallLogDetails = async (tenantId, leadId) => {
                 preserveNullAndEmptyArrays: true
             }
         },
+        // Lookup call log createdBy (changed from lead.createdBy)
         {
             $lookup: {
                 from: `${tenantId}_users`,
-                localField: 'lead.createdBy',
+                localField: 'createdBy',  // Changed from 'lead.createdBy'
                 foreignField: '_id',
-                as: 'lead.createdBy'
+                as: 'createdBy'  // Changed the alias
             }
         },
         {
-            $unwind: '$lead.createdBy'
+            $unwind: '$createdBy'  // Changed from '$lead.createdBy'
         },
         {
             $addFields: {
@@ -1038,12 +1039,13 @@ const getPreviousCallLogDetails = async (tenantId, leadId) => {
                 deleted: 0,
                 'lead.deleted': 0,
                 'lead.contact.deleted': 0,
-                'lead.createdBy.password': 0,
-                'lead.createdBy.isDeleted': 0,
-                'lead.createdBy.tenantId': 0,
-                'lead.createdBy.createdAt': 0,
-                'lead.createdBy.updatedAt': 0,
-                'lead.createdBy.__v': 0
+                // Changed to project call log's createdBy
+                'createdBy.password': 0,
+                'createdBy.isDeleted': 0,
+                'createdBy.tenantId': 0,
+                'createdBy.createdAt': 0,
+                'createdBy.updatedAt': 0,
+                'createdBy.__v': 0
             }
         }
     ])
@@ -1097,13 +1099,13 @@ const getCompanyCallLogActivityDetails = async (tenantId, companyId) => {
                     as: 'leadDetails.contact'
                 }
             },
-            // Step 6: Lookup lead createdBy user
+            // Step 6: Lookup callLog createdBy user (changed from leadDetails.createdBy)
             {
                 $lookup: {
                     from: `${tenantId}_users`,
-                    localField: 'leadDetails.createdBy',
+                    localField: 'createdBy',  // Changed from 'leadDetails.createdBy'
                     foreignField: '_id',
-                    as: 'leadDetails.createdBy'
+                    as: 'createdByUser'  // Changed the alias
                 }
             },
             // Step 7: Unwind the lookups (convert arrays to objects)
@@ -1115,8 +1117,8 @@ const getCompanyCallLogActivityDetails = async (tenantId, companyId) => {
                     'leadDetails.contact': {
                         $arrayElemAt: ['$leadDetails.contact', 0]
                     },
-                    'leadDetails.createdBy': {
-                        $arrayElemAt: ['$leadDetails.createdBy', 0]
+                    'createdByUser': {  // Changed from 'leadDetails.createdBy'
+                        $arrayElemAt: ['$createdByUser', 0]
                     }
                 }
             },
@@ -1140,25 +1142,27 @@ const getCompanyCallLogActivityDetails = async (tenantId, companyId) => {
                     updatedAt: 1,
                     outcome: 1,
 
-                    leadDetails: {
-                    _id: 1,
-                    company: 1,
-                    contact: 1,
-                    status: 1,
-                    source: 1,
-                    followUp: 1,
-                    priority: 1,
-                    deleted: 1,
-                    createdAt: 1,
-                    updatedAt: 1,
-
+                    // Add createdBy at the call log level
                     createdBy: {
-                        _id: '$leadDetails.createdBy._id',
-                        firstName: '$leadDetails.createdBy.firstName',
-                        lastName: '$leadDetails.createdBy.lastName',
-                        email: '$leadDetails.createdBy.email',
-                        role: '$leadDetails.createdBy.role'
-                    }
+                        _id: '$createdByUser._id',
+                        firstName: '$createdByUser.firstName',
+                        lastName: '$createdByUser.lastName',
+                        email: '$createdByUser.email',
+                        role: '$createdByUser.role'
+                    },
+
+                    leadDetails: {
+                        _id: 1,
+                        company: 1,
+                        contact: 1,
+                        status: 1,
+                        source: 1,
+                        followUp: 1,
+                        priority: 1,
+                        deleted: 1,
+                        createdAt: 1,
+                        updatedAt: 1
+                        // Removed createdBy from here
                     }
                 }
             }
