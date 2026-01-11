@@ -12,7 +12,7 @@ const validateSignupPayload = [
     validatePassword(),
 ]
 
-const validateLoginPayload = [validateEmail(), validatePassword()]
+const validateLoginPayload = [validateEmail()]
 
 module.exports = {
     validateSignupPayload,
