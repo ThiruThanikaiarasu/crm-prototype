@@ -12,7 +12,6 @@ const createPipeline = async (tenantId, pipelineData) => {
     const Pipeline = pipelineModel(tenantId)
     const CompanyLead = companyLeadModel(tenantId)
 
-    // Check if pipeline already exists for this company
     const existingPipeline = await Pipeline.findOne({
         company: pipelineData.company,
         'deleted.isDeleted': false

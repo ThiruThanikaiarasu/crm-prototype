@@ -48,7 +48,7 @@ const create = async (request, response) => {
             nextStep,
             followUp,
             remarks,
-            owner: userId
+            createdBy: userId
         })
 
         return response.status(201).send(
