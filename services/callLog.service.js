@@ -228,11 +228,12 @@ const createCallLog = async (tenantId, payload) => {
 
         await existingLead.save({ session })
 
-        /* -------------------- Create call log -------------------- */
+        /* -------------------- Create call log with outcome -------------------- */
 
         const callLog = await CallLog.create(
             [{
                 lead,
+                outcome,  // Keep outcome in call log
                 followUp,
                 remarks,
                 callStartTime,
@@ -245,7 +246,6 @@ const createCallLog = async (tenantId, payload) => {
         await session.commitTransaction()
 
         /* -------------------- Return enriched call log -------------------- */
-        // (your aggregation stays the same)
         const result = await CallLog.aggregate([
             { $match: { _id: callLog[0]._id } },
             // ... rest of your aggregation
@@ -292,6 +292,11 @@ const getAllCallLogs = async (
         matchStage.remarks = { $regex: remarks, $options: 'i' }
     }
 
+    // Filter by call log outcome, not lead status
+    if (outcome) {
+        matchStage.outcome = outcome
+    }
+
     if (followUp) {
         const date = new Date(followUp)
         if (!isNaN(date.getTime())) {
@@ -319,12 +324,6 @@ const getAllCallLogs = async (
             }
         },
         { $unwind: '$lead' },
-
-        ...(outcome ? [{
-            $match: {
-                'lead.status': outcome
-            }
-        }] : []),
 
         {
             $lookup: {
@@ -690,9 +689,8 @@ const updateCallLog = async (tenantId, id, payload) => {
             }
         }
 
-        /* -------------------- Update call log fields -------------------- */
+        /* -------------------- Update call log fields (excluding outcome) -------------------- */
         const allowedFields = [
-            'outcome',
             'followUp',
             'remarks',
             'callStartTime',
@@ -705,7 +703,7 @@ const updateCallLog = async (tenantId, id, payload) => {
             }
         })
 
-        /* -------------------- Sync lead status if outcome changed -------------------- */
+        /* -------------------- Update lead status if outcome changed -------------------- */
         if (payload.outcome !== undefined) {
             const lead = await Lead.findOne({
                 _id: callLog.lead,
@@ -721,6 +719,7 @@ const updateCallLog = async (tenantId, id, payload) => {
                 )
             }
 
+            // Update lead status
             lead.status = payload.outcome
 
             if (payload.outcome === 'dropped') {

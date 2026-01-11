@@ -12,6 +12,11 @@ const createCallLogSchema = (tenantId) => {
                 type: Date,
                 required: [true, 'Follow up date is required']
             },
+            outcome: {
+                type: String,
+                enum: ['interested', 'not_interested', 'follow_up_needed', 'promoted_to_meeting', 'conversion_in_progress', 'dropped'],
+                required: [true, 'Outcome is required']
+            },
             remarks: {
                 type: String,
                 required: [true, 'Remarks is required']
