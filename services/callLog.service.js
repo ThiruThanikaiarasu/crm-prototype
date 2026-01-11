@@ -1118,7 +1118,8 @@ const getCompanyCallLogActivityDetails = async (tenantId, companyId) => {
                     callDuration: 1,
                     createdAt: 1,
                     updatedAt: 1,
-                    leadDetails: 1
+                    leadDetails: 1,
+                    outcome: 1
                 }
             }
         ]);
