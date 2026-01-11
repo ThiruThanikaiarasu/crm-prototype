@@ -450,7 +450,10 @@ const getAllCallLogs = async (
                 },
                 'lead.name': '$lead.contact.name',
                 'lead.email': '$lead.contact.email',
-                'lead.phone': '$lead.contact.phone'
+                'lead.phone': '$lead.contact.phone',
+                // Add lowercase versions for case-insensitive sorting
+                companyNameLower: { $toLower: { $ifNull: ['$lead.company.name', ''] } },
+                contactNameLower: { $toLower: { $ifNull: ['$lead.contact.name', ''] } }
             }
         },
         {
@@ -464,7 +467,13 @@ const getAllCallLogs = async (
         {
             $facet: {
                 data: [
-                    { $sort: { [sort]: sortOrder } },
+                    {
+                        $sort: {
+                            [sort === 'company' ? 'companyNameLower' :
+                             sort === 'contact' ? 'contactNameLower' :
+                             sort]: sortOrder
+                        }
+                    },
                     { $skip: skip },
                     { $limit: Number(limit) }
                 ],

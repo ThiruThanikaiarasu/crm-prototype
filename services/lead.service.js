@@ -332,13 +332,32 @@ const getAllLeads = async (
             _id: '$company._id',
             companyDetails: { $first: '$company' },
             matchedLeadsCount: { $sum: 1 },
-            maxCreatedAt: { $max: '$createdAt' }
+            maxCreatedAt: { $max: '$createdAt' },
+            // Add lowercase versions for case-insensitive sorting
+            companyName: { $first: '$company.name' },
+            companyNameLower: { $first: { $toLower: '$company.name' } },
+            contactFirstName: { $first: { $toLower: '$contact.firstName' } },  // or 'name'
+            contactFirstNameLower: { $first: { $toLower: '$contact.firstName' } }  // or 'name'
         }
     })
 
-    const allowedSortFields = ['createdAt', 'matchedLeadsCount']
-    const sortField = sort === 'createdAt' ? 'maxCreatedAt' : 'matchedLeadsCount'
-    const sortOrder = order === 'asc' ? 1 : -1
+    // Update the sort logic:
+    const allowedSortFields = ['createdAt', 'matchedLeadsCount', 'company', 'contact']
+    let sortField, sortOrder;
+
+    if (sort === 'createdAt') {
+        sortField = 'maxCreatedAt'
+    } else if (sort === 'matchedLeadsCount') {
+        sortField = 'matchedLeadsCount'
+    } else if (sort === 'company') {
+        sortField = 'companyNameLower'  // Use lowercase version
+    } else if (sort === 'contact') {
+        sortField = 'contactFirstNameLower'  // Use lowercase version
+    } else {
+        sortField = 'maxCreatedAt'  // default
+    }
+
+    sortOrder = order === 'asc' ? 1 : -1
     const sortObject = { [sortField]: sortOrder }
 
     pipeline.push({
