@@ -30,6 +30,11 @@ const createCallLogSchema = (tenantId) => {
                 min: [0, 'Call duration cannot be negative'],
                 required: [true, 'Call duration is required']
             },
+            createdBy: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: `${tenantId}_users`,
+                required: [true, 'Created by is required']
+            },
             deleted: {
                 isDeleted: {
                     type: Boolean,

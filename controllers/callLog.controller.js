@@ -38,7 +38,7 @@ const create = async (request, response) => {
             remarks,
             callStartTime,
             callDuration,
-            owner: userId,
+            createdBy: userId,
         })
 
         return response.status(201).send(

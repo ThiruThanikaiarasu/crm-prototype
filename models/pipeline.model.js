@@ -39,10 +39,10 @@ const createPipelineSchema = (tenantId) => {
                 type: String,
                 default: ''
             },
-            owner: {
+            createdBy: {
                 type: mongoose.Schema.Types.ObjectId,
                 ref: `${tenantId}_users`,
-                required: [true, 'Owner is required']
+                required: [true, 'Created by is required']
             },
             deleted: {
                 isDeleted: {

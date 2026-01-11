@@ -165,7 +165,7 @@ const createCallLog = async (tenantId, payload) => {
             remarks,
             callStartTime,
             callDuration,
-            owner
+            createdBy
         } = payload
 
         if (!lead) {
@@ -238,7 +238,7 @@ const createCallLog = async (tenantId, payload) => {
                 remarks,
                 callStartTime,
                 callDuration,
-                owner
+                createdBy
             }],
             { session }
         )
@@ -959,7 +959,6 @@ const restoreCallLogById = async (tenantId, userId, id) => {
 
 const getPreviousCallLogDetails = async (tenantId, leadId) => {
     const CallLog = callLogModel(tenantId)
-    console.log(leadId)
     const result = await CallLog.aggregate([
         {
             $match: {
@@ -970,10 +969,6 @@ const getPreviousCallLogDetails = async (tenantId, leadId) => {
         {
             $sort: { createdAt: -1 }
         },
-        // {
-        //     $limit: 1
-        // },
-
         {
             $lookup: {
                 from: `${tenantId}_leads`,
@@ -1011,7 +1006,17 @@ const getPreviousCallLogDetails = async (tenantId, leadId) => {
                 preserveNullAndEmptyArrays: true
             }
         },
-
+        {
+            $lookup: {
+                from: `${tenantId}_users`,
+                localField: 'lead.createdBy',
+                foreignField: '_id',
+                as: 'lead.createdBy'
+            }
+        },
+        {
+            $unwind: '$lead.createdBy'
+        },
         {
             $addFields: {
                 'lead.name': '$lead.contact.name',
@@ -1023,7 +1028,13 @@ const getPreviousCallLogDetails = async (tenantId, leadId) => {
             $project: {
                 deleted: 0,
                 'lead.deleted': 0,
-                'lead.contact.deleted': 0
+                'lead.contact.deleted': 0,
+                'lead.createdBy.password': 0,
+                'lead.createdBy.isDeleted': 0,
+                'lead.createdBy.tenantId': 0,
+                'lead.createdBy.createdAt': 0,
+                'lead.createdBy.updatedAt': 0,
+                'lead.createdBy.__v': 0
             }
         }
     ])
@@ -1118,10 +1129,31 @@ const getCompanyCallLogActivityDetails = async (tenantId, companyId) => {
                     callDuration: 1,
                     createdAt: 1,
                     updatedAt: 1,
-                    leadDetails: 1,
-                    outcome: 1
+                    outcome: 1,
+
+                    leadDetails: {
+                    _id: 1,
+                    company: 1,
+                    contact: 1,
+                    status: 1,
+                    source: 1,
+                    followUp: 1,
+                    priority: 1,
+                    deleted: 1,
+                    createdAt: 1,
+                    updatedAt: 1,
+
+                    createdBy: {
+                        _id: '$leadDetails.createdBy._id',
+                        firstName: '$leadDetails.createdBy.firstName',
+                        lastName: '$leadDetails.createdBy.lastName',
+                        email: '$leadDetails.createdBy.email',
+                        role: '$leadDetails.createdBy.role'
+                    }
+                    }
                 }
             }
+
         ]);
 
         return callLogs;
