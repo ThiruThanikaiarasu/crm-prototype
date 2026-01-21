@@ -44,7 +44,6 @@ const verifyInvite = async (request, response) => {
             )
         )
     } catch (error) {
-        console.log(error)
         return response.status(error.statusCode || 500).send(
             setResponseBody(
                 error.message || 'Internal Server Error',

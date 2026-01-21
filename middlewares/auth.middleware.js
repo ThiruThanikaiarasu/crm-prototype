@@ -104,7 +104,6 @@ const verifyUser = async (request, response, next) => {
         request.user = { userId, tenantId, role }
         return next()
     } catch (error) {
-        console.log(error)
         return response
             .status(500)
             .send(

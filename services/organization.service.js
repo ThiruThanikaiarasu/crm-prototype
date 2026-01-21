@@ -63,8 +63,6 @@ const inviteUsersToOrganization = async (tenantId, users) => {
     try {
         if (!users || users.length === 0) return
 
-        console.log(`Starting to invite ${users.length} users for tenant ${tenantId}`)
-
         const User = userModel(tenantId)
 
         for (const user of users) {

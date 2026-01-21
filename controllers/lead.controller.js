@@ -33,7 +33,6 @@ const createANewLead = async (request, response) => {
             ),
         )
     } catch (error) {
-        console.log(error)
         return response.status(error.statusCode || 500).send(
             setResponseBody(
                 error.message || 'Internal Server Error',
@@ -83,7 +82,6 @@ const getAll = async (request, response) => {
             ),
         )
     } catch (error) {
-        console.log(error)
         response
             .status(500)
             .send(
@@ -200,7 +198,6 @@ const deleteALeadById = async (request, response) => {
         }
 
         const { tenantId, userId } = request.user
-        console.log(userId)
         const { id } = request.params
 
         const lead = await deleteLeadById(tenantId, userId, id)
