@@ -10,7 +10,7 @@ const createContactLeadSchema = (tenantId) => {
                 maxLength: [50, 'Name must be fewer than 50 characters'],
             },
             phone: {
-                extension: {
+                countryCode: {
                     type: String,
                     maxLength: [5, 'Phone extension must be fewer than 5 characters'],
                     validate: {
@@ -33,6 +33,17 @@ const createContactLeadSchema = (tenantId) => {
                         message: 'Phone number must contain digits only'
                     }
                 },
+                extension: {
+                    type: String,
+                    maxLength: [10, 'Phone extension must be fewer than 10 characters'],
+                    validate: {
+                        validator: function (value) {
+                            if (!value) return true
+                            return /^\d+$/.test(value)
+                        },
+                        message: 'Phone extension must contain digits only'
+                    }
+                },
             },
             email: {
                 type: String,
@@ -40,6 +51,16 @@ const createContactLeadSchema = (tenantId) => {
                     /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
                     'Please fill a valid email address',
                 ],
+            },
+            department: {
+                type: String,
+                minLength: [2, 'Department must be at least 2 characters'],
+                maxLength: [50, 'Department must be fewer than 50 characters'],
+            },
+            remarks: {
+                type: String,
+                minLength: [2, 'Remarks must be at least 2 characters'],
+                maxLength: [255, 'Remarks must be fewer than 255 characters'],
             },
             deleted: {
                 isDeleted: {

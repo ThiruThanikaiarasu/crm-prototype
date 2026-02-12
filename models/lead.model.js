@@ -33,6 +33,49 @@ const createLeadSchema = (tenantId) => {
                 minLength: [2, 'Source must be at least 2 characters'],
                 maxLength: [50, 'Source must be fewer than 50 characters'],
             },
+            benificiary: {
+                name: {
+                    type: String,
+                    minLength: [2, 'Benificiary name must be at least 2 characters'],
+                    maxLength: [50, 'Benificiary name must be fewer than 50 characters'],
+                },
+                phone: {
+                    countryCode: {
+                        type: String,
+                        maxLength: [5, 'Phone extension must be fewer than 5 characters'],
+                        validate: {
+                            validator: function (value) {
+                                if (!value) return true
+                                return /^\+\d+$/.test(value)
+                            },
+                            message: 'Phone extension must start with + and contain numbers only'
+                        }
+                    },
+                    number: {
+                        type: String,
+                        minLength: [8, 'Phone number must be at least 8 characters'],
+                        maxLength: [15, 'Phone number must be fewer than 15 characters'],
+                        validate: {
+                            validator: function (value) {
+                                if (!value) return true
+                                return /^\d+$/.test(value)
+                            },
+                            message: 'Phone number must contain digits only'
+                        }
+                    },
+                    extension: {
+                        type: String,
+                        maxLength: [10, 'Phone extension must be fewer than 10 characters'],
+                        validate: {
+                            validator: function (value) {
+                                if (!value) return true
+                                return /^\d+$/.test(value)
+                            },
+                            message: 'Phone extension must contain digits only'
+                        }
+                    },
+                }
+            },
             followUp: {
                 type: Date,
             },

@@ -19,7 +19,7 @@ const createCompanyLeadSchema = (tenantId) => {
                 ],
             },
             phone: {
-                extension: {
+                countryCode: {
                     type: String,
                     maxLength: [5, 'Phone extension must be fewer than 5 characters'],
                     validate: {
@@ -40,6 +40,17 @@ const createCompanyLeadSchema = (tenantId) => {
                             return /^\d+$/.test(value)
                         },
                         message: 'Phone number must contain digits only'
+                    }
+                },
+                extension: {
+                    type: String,
+                    maxLength: [10, 'Phone extension must be fewer than 10 characters'],
+                    validate: {
+                        validator: function (value) {
+                            if (!value) return true
+                            return /^\d+$/.test(value)
+                        },
+                        message: 'Phone extension must contain digits only'
                     }
                 },
             },
@@ -64,6 +75,74 @@ const createCompanyLeadSchema = (tenantId) => {
                     values: ['hiring_service', 'peo_and_eor', 'digital_marketing', 'digital_solutions'],
                     message: '{VALUE} is not a valid service name',
                 },
+            },
+            address: {
+                door: {
+                    type: String,
+                    required: true,
+                    match: [
+                        /^[a-zA-Z0-9\/\- ]{1,20}$/,
+                        'Door number can contain letters, numbers, space, / or - (max 20 characters)'
+                    ]
+                },
+
+                street: {
+                    type: String,
+                    required: true,
+                    match: [
+                        /^[a-zA-Z0-9.,\- ]{3,100}$/,
+                        'Street name must be 3–100 characters and can include letters, numbers, space, comma, dot or hyphen'
+                    ]
+                },
+
+                area: {
+                    type: String,
+                    required: true,
+                    match: [
+                        /^[a-zA-Z0-9.,\- ]{2,100}$/,
+                        'Area must be 2–100 characters'
+                    ]
+                },
+
+                city: {
+                    type: String,
+                    required: true,
+                    match: [
+                        /^[a-zA-Z ]{2,50}$/,
+                        'City should contain only letters and spaces (2–50 characters)'
+                    ]
+                },
+
+                pincode: {
+                    type: String,
+                    required: true,
+                    match: [
+                        /^[1-9][0-9]{4}$/,
+                        'Pincode must be a valid 5-digit Saudi postal code'
+                    ]
+                },
+                location: {
+                    latitude: {
+                        type: Number,
+                        required: true,
+                        min: [-90, 'Latitude must be between -90 and 90'],
+                        max: [90, 'Latitude must be between -90 and 90']
+                    },
+                    longitude: {
+                        type: Number,
+                        required: true,
+                        min: [-180, 'Longitude must be between -180 and 180'],
+                        max: [180, 'Longitude must be between -180 and 180']
+                    }
+                },
+                shortAddress: {
+                    type: String,
+                    required: true,
+                    match: [
+                        /^[A-Z]{4}[0-9]{4}$/,
+                        'Short address must be 8 characters: 4 uppercase letters followed by 4 digits (e.g., RRRD2929)'
+                    ]
+                }
             },
             deleted: {
                 isDeleted: {
