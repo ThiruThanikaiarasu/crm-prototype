@@ -1,4 +1,4 @@
-const { body } = require('express-validator')
+const { body, query } = require('express-validator')
 
 const LEAD_STATUSES = [
     'new',
@@ -117,6 +117,31 @@ const validateCreateANewLeadLeadPayload = [
         .withMessage('Priority must be a number greater than or equal to 0'),
 ]
 
+const validateGetAllLeadsQuery = [
+    query('serviceType')
+        .optional()
+        .custom((value) => {
+            // If it's already an array, validate each element
+            if (Array.isArray(value)) {
+                const allValid = value.every(type => SERVICE_NAMES.includes(type))
+                if (!allValid) {
+                    throw new Error(`Invalid service type. Allowed values: ${SERVICE_NAMES.join(', ')}`)
+                }
+                return true
+            }
+            // If it's a single value, validate it
+            if (typeof value === 'string') {
+                if (!SERVICE_NAMES.includes(value)) {
+                    throw new Error(`Invalid service type. Allowed values: ${SERVICE_NAMES.join(', ')}`)
+                }
+                return true
+            }
+            throw new Error('Service type must be a string or array of strings')
+        })
+        .withMessage('Invalid service type format')
+]
+
 module.exports = {
     validateCreateANewLeadLeadPayload,
+    validateGetAllLeadsQuery,
 }

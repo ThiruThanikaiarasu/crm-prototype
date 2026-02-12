@@ -154,7 +154,9 @@ const getAllLeadsWithPagination = async (tenantId, filters = {}) => {
     const postLookupMatch = {}
     if (company) postLookupMatch['company.name'] = { $regex: company, $options: 'i' }
     if (contact) postLookupMatch['contact.name'] = { $regex: contact, $options: 'i' }
-    if (serviceType) postLookupMatch['company.serviceType'] = serviceType
+    if (serviceType && Array.isArray(serviceType) && serviceType.length > 0) {
+        postLookupMatch['company.serviceType'] = { $in: serviceType }
+    }
 
     if (Object.keys(postLookupMatch).length > 0) {
         pipeline.push({ $match: postLookupMatch })

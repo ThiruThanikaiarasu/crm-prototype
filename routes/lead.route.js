@@ -2,7 +2,7 @@ const express = require('express')
 const router = express.Router()
 
 const { createANewLead, getAll, getALeadById, updateALeadById, deleteALeadById, restoreALeadById } = require('../controllers/lead.controller')
-const { validateCreateANewLeadLeadPayload } = require('../validators/lead.validator')
+const { validateCreateANewLeadLeadPayload, validateGetAllLeadsQuery } = require('../validators/lead.validator')
 const { verifyUser, allowRoles } = require('../middlewares/auth.middleware')
 const { validateObjectIdParam } = require('../validators/common.validator')
 const ROLES = require('../constants/role.constant')
@@ -21,6 +21,8 @@ router.get(
     '/',
 
     verifyUser,
+
+    validateGetAllLeadsQuery,
 
     getAll,
 )

@@ -46,6 +46,20 @@ const createANewLead = async (request, response) => {
 
 const getAll = async (request, response) => {
     try {
+        const errors = validationResult(request)
+        if (!errors.isEmpty()) {
+            return response
+                .status(400)
+                .send(
+                    setResponseBody(
+                        errors.array()[0].msg,
+                        ERROR_CODES.VALIDATION_ERROR,
+                        'validation_error',
+                        null,
+                    ),
+                )
+        }
+
         const { tenantId } = request.user
         const {
             page,
@@ -60,6 +74,12 @@ const getAll = async (request, response) => {
             serviceType,
         } = request.query
 
+        // Ensure serviceType is always an array or undefined
+        let serviceTypeArray = undefined
+        if (serviceType) {
+            serviceTypeArray = Array.isArray(serviceType) ? serviceType : [serviceType]
+        }
+
         const result = await getAllLeads(tenantId, {
             page,
             limit,
@@ -70,7 +90,7 @@ const getAll = async (request, response) => {
             sort,
             order,
             followUp,
-            serviceType,
+            serviceType: serviceTypeArray,
         })
 
         return response.status(200).send(
