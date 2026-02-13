@@ -73,7 +73,9 @@ const getLeadByIdWithDetails = async (tenantId, id) => {
             $addFields: {
                 name: '$contact.name',
                 email: '$contact.email',
-                phone: '$contact.phone'
+                phone: '$contact.phone',
+                department: '$contact.department',
+                remarks: '$contact.remarks'
             }
         },
         {
@@ -212,7 +214,9 @@ const getAllLeadsWithPagination = async (tenantId, filters = {}) => {
                                 $addFields: {
                                     name: '$contact.name',
                                     email: '$contact.email',
-                                    phone: '$contact.phone'
+                                    phone: '$contact.phone',
+                                    department: '$contact.department',
+                                    remarks: '$contact.remarks'
                                 }
                             },
                             { $sort: { createdAt: -1 } },

@@ -33,10 +33,13 @@ const validateCreateANewLeadLeadPayload = [
         .isIn(SERVICE_NAMES)
         .withMessage('Invalid service name'),
 
-    body('company.phone.extension')
+    // Company phone validation
+    body('company.phone.countryCode')
         .optional({ nullable: true })
+        .isLength({ max: 5 })
+        .withMessage('Phone country code must be fewer than 5 characters')
         .matches(/^\+\d+$/)
-        .withMessage('Phone extension must start with + and contain numbers only'),
+        .withMessage('Phone country code must start with + and contain numbers only'),
 
     body('company.phone.number')
         .optional({ nullable: true })
@@ -44,6 +47,54 @@ const validateCreateANewLeadLeadPayload = [
         .withMessage('Phone number must be between 8 and 15 digits')
         .matches(/^\d+$/)
         .withMessage('Phone number must contain digits only'),
+
+    body('company.phone.extension')
+        .optional({ nullable: true })
+        .isLength({ max: 10 })
+        .withMessage('Phone extension must be fewer than 10 characters')
+        .matches(/^\d+$/)
+        .withMessage('Phone extension must contain digits only'),
+
+    // Company address validation
+    body('company.address.door')
+        .optional({ nullable: true })
+        .matches(/^[a-zA-Z0-9\/\- ]{1,20}$/)
+        .withMessage('Door number can contain letters, numbers, space, / or - (max 20 characters)'),
+
+    body('company.address.street')
+        .optional({ nullable: true })
+        .matches(/^[a-zA-Z0-9.,\- ]{3,100}$/)
+        .withMessage('Street name must be 3–100 characters and can include letters, numbers, space, comma, dot or hyphen'),
+
+    body('company.address.area')
+        .optional({ nullable: true })
+        .matches(/^[a-zA-Z0-9.,\- ]{2,100}$/)
+        .withMessage('Area must be 2–100 characters'),
+
+    body('company.address.city')
+        .optional({ nullable: true })
+        .matches(/^[a-zA-Z ]{2,50}$/)
+        .withMessage('City should contain only letters and spaces (2–50 characters)'),
+
+    body('company.address.pincode')
+        .optional({ nullable: true })
+        .matches(/^[1-9][0-9]{4}$/)
+        .withMessage('Pincode must be a valid 5-digit postal code'),
+
+    body('company.address.location.latitude')
+        .optional({ nullable: true })
+        .isFloat({ min: -90, max: 90 })
+        .withMessage('Latitude must be between -90 and 90'),
+
+    body('company.address.location.longitude')
+        .optional({ nullable: true })
+        .isFloat({ min: -180, max: 180 })
+        .withMessage('Longitude must be between -180 and 180'),
+
+    body('company.address.shortAddress')
+        .optional({ nullable: true })
+        .matches(/^[A-Z]{4}[0-9]{4}$/)
+        .withMessage('Short address must be 8 characters: 4 uppercase letters followed by 4 digits (e.g., RRRD2929)'),
 
     body('company.website')
         .optional({ nullable: true })
@@ -71,10 +122,13 @@ const validateCreateANewLeadLeadPayload = [
         .isLength({ min: 2, max: 50 })
         .withMessage('Contact name must be between 2 and 50 characters'),
 
-    body('leads.*.phone.extension')
+    // Contact phone validation
+    body('leads.*.phone.countryCode')
         .optional({ nullable: true })
+        .isLength({ max: 5 })
+        .withMessage('Phone country code must be fewer than 5 characters')
         .matches(/^\+\d+$/)
-        .withMessage('Phone extension must start with + and contain numbers only'),
+        .withMessage('Phone country code must start with + and contain numbers only'),
 
     body('leads.*.phone.number')
         .optional({ nullable: true })
@@ -83,10 +137,27 @@ const validateCreateANewLeadLeadPayload = [
         .matches(/^\d+$/)
         .withMessage('Phone number must contain digits only'),
 
+    body('leads.*.phone.extension')
+        .optional({ nullable: true })
+        .isLength({ max: 10 })
+        .withMessage('Phone extension must be fewer than 10 characters')
+        .matches(/^\d+$/)
+        .withMessage('Phone extension must contain digits only'),
+
     body('leads.*.email')
         .optional({ nullable: true })
         .isEmail()
         .withMessage('Please provide a valid email address'),
+
+    body('leads.*.department')
+        .optional({ nullable: true })
+        .isLength({ min: 2, max: 50 })
+        .withMessage('Department must be between 2 and 50 characters'),
+
+    body('leads.*.remarks')
+        .optional({ nullable: true })
+        .isLength({ min: 2, max: 255 })
+        .withMessage('Remarks must be between 2 and 255 characters'),
 
 
     body('leads.*.status')
@@ -105,6 +176,33 @@ const validateCreateANewLeadLeadPayload = [
         .optional({ nullable: true })
         .isLength({ min: 2, max: 50 })
         .withMessage('Source must be between 2 and 50 characters'),
+
+    // Beneficiary validation
+    body('leads.*.benificiary.name')
+        .optional({ nullable: true })
+        .isLength({ min: 2, max: 50 })
+        .withMessage('Beneficiary name must be between 2 and 50 characters'),
+
+    body('leads.*.benificiary.phone.countryCode')
+        .optional({ nullable: true })
+        .isLength({ max: 5 })
+        .withMessage('Beneficiary phone country code must be fewer than 5 characters')
+        .matches(/^\+\d+$/)
+        .withMessage('Beneficiary phone country code must start with + and contain numbers only'),
+
+    body('leads.*.benificiary.phone.number')
+        .optional({ nullable: true })
+        .isLength({ min: 8, max: 15 })
+        .withMessage('Beneficiary phone number must be between 8 and 15 digits')
+        .matches(/^\d+$/)
+        .withMessage('Beneficiary phone number must contain digits only'),
+
+    body('leads.*.benificiary.phone.extension')
+        .optional({ nullable: true })
+        .isLength({ max: 10 })
+        .withMessage('Beneficiary phone extension must be fewer than 10 characters')
+        .matches(/^\d+$/)
+        .withMessage('Beneficiary phone extension must contain digits only'),
 
     body('leads.*.followUp')
         .optional({ nullable: true })

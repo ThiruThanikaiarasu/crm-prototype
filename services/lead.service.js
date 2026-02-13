@@ -107,7 +107,7 @@ const createLead = async (payload, tenantId, userId) => {
             }
 
             const contactsToInsert = leadsPayload.map(leadData => {
-                const { status, source, followUp, priority, droppedReason, ...contactInfo } = leadData
+                const { status, source, followUp, priority, droppedReason, benificiary, ...contactInfo } = leadData
                 return contactInfo
             })
 
@@ -126,6 +126,7 @@ const createLead = async (payload, tenantId, userId) => {
                     source: originalLead.source || null,
                     followUp: originalLead.followUp || null,
                     priority: originalLead.priority || 1,
+                    benificiary: originalLead.benificiary || undefined,
                     createdBy: userId
                 }
             })
@@ -146,10 +147,13 @@ const createLead = async (payload, tenantId, userId) => {
                     name: contactInfo.name,
                     email: contactInfo.email,
                     phone: contactInfo.phone,
+                    department: contactInfo.department,
+                    remarks: contactInfo.remarks,
                     status: lead.status,
                     source: lead.source,
                     followUp: lead.followUp,
                     priority: lead.priority,
+                    benificiary: lead.benificiary,
                     createdAt: lead.createdAt,
                     updatedAt: lead.updatedAt
                 }
@@ -263,7 +267,7 @@ const updateLeadById = async (tenantId, id, payload) => {
             )
         }
 
-        const { company, leads, name, email, phone, status, source, followUp, priority, droppedReason } = payload
+        const { company, leads, name, email, phone, department, remarks, status, source, followUp, priority, droppedReason, benificiary } = payload
 
         if (company && Object.keys(company).length > 0) {
             const companyUpdateData = {}
@@ -275,6 +279,23 @@ const updateLeadById = async (tenantId, id, payload) => {
                     Object.keys(company.phone).forEach(phoneKey => {
                         if (company.phone[phoneKey] !== undefined) {
                             companyUpdateData[`phone.${phoneKey}`] = company.phone[phoneKey]
+                        }
+                    })
+                    return
+                }
+
+                if (key === 'address' && typeof company.address === 'object') {
+                    Object.keys(company.address).forEach(addressKey => {
+                        if (company.address[addressKey] === undefined) return
+
+                        if (addressKey === 'location' && typeof company.address.location === 'object') {
+                            Object.keys(company.address.location).forEach(locationKey => {
+                                if (company.address.location[locationKey] !== undefined) {
+                                    companyUpdateData[`address.location.${locationKey}`] = company.address.location[locationKey]
+                                }
+                            })
+                        } else {
+                            companyUpdateData[`address.${addressKey}`] = company.address[addressKey]
                         }
                     })
                     return
@@ -295,6 +316,8 @@ const updateLeadById = async (tenantId, id, payload) => {
         const contactUpdateData = {}
         if (name !== undefined) contactUpdateData.name = name
         if (email !== undefined) contactUpdateData.email = email
+        if (department !== undefined) contactUpdateData.department = department
+        if (remarks !== undefined) contactUpdateData.remarks = remarks
 
         if (phone && typeof phone === 'object') {
             Object.keys(phone).forEach(phoneKey => {
@@ -363,7 +386,7 @@ const updateLeadById = async (tenantId, id, payload) => {
 
             if (leadsToProcess.length > 0) {
                 const contactsToInsert = leadsToProcess.map(leadData => {
-                    const { status, source, followUp, priority, droppedReason, ...contactInfo } = leadData
+                    const { status, source, followUp, priority, droppedReason, benificiary, ...contactInfo } = leadData
                     return contactInfo
                 })
                 const insertedContacts = await ContactLead.insertMany(
@@ -381,6 +404,7 @@ const updateLeadById = async (tenantId, id, payload) => {
                         source: originalLead.source || null,
                         followUp: originalLead.followUp || null,
                         priority: originalLead.priority || 1,
+                        benificiary: originalLead.benificiary || undefined,
                         createdBy: lead.owner
                     }
                 })
@@ -396,6 +420,28 @@ const updateLeadById = async (tenantId, id, payload) => {
         if (source !== undefined) lead.source = source
         if (followUp !== undefined) lead.followUp = followUp
         if (priority !== undefined) lead.priority = priority
+        if (benificiary !== undefined) {
+            if (benificiary && typeof benificiary === 'object') {
+                Object.keys(benificiary).forEach(key => {
+                    if (benificiary[key] === undefined) return
+
+                    if (key === 'phone' && typeof benificiary.phone === 'object') {
+                        Object.keys(benificiary.phone).forEach(phoneKey => {
+                            if (benificiary.phone[phoneKey] !== undefined) {
+                                if (!lead.benificiary) lead.benificiary = {}
+                                if (!lead.benificiary.phone) lead.benificiary.phone = {}
+                                lead.benificiary.phone[phoneKey] = benificiary.phone[phoneKey]
+                            }
+                        })
+                    } else {
+                        if (!lead.benificiary) lead.benificiary = {}
+                        lead.benificiary[key] = benificiary[key]
+                    }
+                })
+            } else {
+                lead.benificiary = benificiary
+            }
+        }
         if (status !== undefined) {
             lead.status = status
             if (status === 'dropped') {
