@@ -70,6 +70,35 @@ const getLeadByIdWithDetails = async (tenantId, id) => {
             }
         },
         {
+            $lookup: {
+                from: `${tenantId}_users`,
+                let: { createdById: '$createdBy' },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $eq: ['$_id', '$$createdById']
+                            }
+                        }
+                    },
+                    {
+                        $project: {
+                            firstName: 1,
+                            lastName: 1,
+                            email: 1
+                        }
+                    }
+                ],
+                as: 'createdBy'
+            }
+        },
+        {
+            $unwind: {
+                path: '$createdBy',
+                preserveNullAndEmptyArrays: true
+            }
+        },
+        {
             $addFields: {
                 name: '$contact.name',
                 email: '$contact.email',
@@ -210,6 +239,35 @@ const getAllLeadsWithPagination = async (tenantId, filters = {}) => {
                                 as: 'contact',
                                 preserveNull: true
                             }),
+                            {
+                                $lookup: {
+                                    from: `${tenantId}_users`,
+                                    let: { createdById: '$createdBy' },
+                                    pipeline: [
+                                        {
+                                            $match: {
+                                                $expr: {
+                                                    $eq: ['$_id', '$$createdById']
+                                                }
+                                            }
+                                        },
+                                        {
+                                            $project: {
+                                                firstName: 1,
+                                                lastName: 1,
+                                                email: 1
+                                            }
+                                        }
+                                    ],
+                                    as: 'createdBy'
+                                }
+                            },
+                            {
+                                $unwind: {
+                                    path: '$createdBy',
+                                    preserveNullAndEmptyArrays: true
+                                }
+                            },
                             {
                                 $addFields: {
                                     name: '$contact.name',
