@@ -1,5 +1,6 @@
 const mongoose = require('mongoose')
 const leadModel = require('../models/lead.model')
+const userModel = require('../models/user.model')
 const {
     companyLookupStage,
     contactLookupStage,
@@ -14,10 +15,12 @@ const {
  * Get lead by ID with populated company and contact
  * @param {string} tenantId
  * @param {string} id
+ * @param {string} userRole - User role to determine if createdBy should be populated
  * @returns {Promise<object|null>}
  */
-const getLeadByIdWithDetails = async (tenantId, id) => {
+const getLeadByIdWithDetails = async (tenantId, id, userRole = null) => {
     const Lead = leadModel(tenantId)
+    const ROLES = require('../constants/role.constant')
 
     const pipeline = [
         {
@@ -68,36 +71,45 @@ const getLeadByIdWithDetails = async (tenantId, id) => {
                 path: '$owner',
                 preserveNullAndEmptyArrays: true
             }
-        },
-        {
-            $lookup: {
-                from: `${tenantId}_users`,
-                let: { createdById: '$createdBy' },
-                pipeline: [
-                    {
-                        $match: {
-                            $expr: {
-                                $eq: ['$_id', '$$createdById']
+        }
+    ]
+
+    // Only add createdBy lookup if user is super_admin
+    if (userRole === ROLES.SUPER_ADMIN) {
+        pipeline.push(
+            {
+                $lookup: {
+                    from: `${tenantId}_users`,
+                    let: { createdById: '$createdBy' },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $eq: ['$_id', '$$createdById']
+                                }
+                            }
+                        },
+                        {
+                            $project: {
+                                firstName: 1,
+                                lastName: 1,
+                                email: 1
                             }
                         }
-                    },
-                    {
-                        $project: {
-                            firstName: 1,
-                            lastName: 1,
-                            email: 1
-                        }
-                    }
-                ],
-                as: 'createdBy'
+                    ],
+                    as: 'createdBy'
+                }
+            },
+            {
+                $unwind: {
+                    path: '$createdBy',
+                    preserveNullAndEmptyArrays: true
+                }
             }
-        },
-        {
-            $unwind: {
-                path: '$createdBy',
-                preserveNullAndEmptyArrays: true
-            }
-        },
+        )
+    }
+
+    pipeline.push(
         {
             $addFields: {
                 name: '$contact.name',
@@ -113,7 +125,7 @@ const getLeadByIdWithDetails = async (tenantId, id) => {
                 contact: 0
             }
         }
-    ]
+    )
 
     const result = await Lead.aggregate(pipeline)
     return result.length > 0 ? result[0] : null
@@ -123,9 +135,14 @@ const getLeadByIdWithDetails = async (tenantId, id) => {
  * Get all leads with pagination and filters
  * @param {string} tenantId
  * @param {object} filters
+ * @param {string} userRole - User role to determine permissions
  * @returns {Promise<object>}
  */
-const getAllLeadsWithPagination = async (tenantId, filters = {}) => {
+const getAllLeadsWithPagination = async (tenantId, filters = {}, userRole = null) => {
+    const ForbiddenError = require('../errors/ForbiddenError')
+    const { ERROR_CODES } = require('../constants/error.constant')
+    const ROLES = require('../constants/role.constant')
+
     const {
         page = 1,
         limit = 10,
@@ -137,8 +154,19 @@ const getAllLeadsWithPagination = async (tenantId, filters = {}) => {
         order = 'desc',
         followUp,
         priority,
-        serviceType
+        serviceType,
+        owner
     } = filters
+
+    // Check if owner filter is used and validate user role
+    if (owner && userRole !== ROLES.SUPER_ADMIN) {
+        throw new ForbiddenError(
+            403,
+            'Only super admin can filter by owner',
+            ERROR_CODES.FORBIDDEN_ACCESS,
+            'forbidden'
+        )
+    }
 
     const Lead = leadModel(tenantId)
     const skip = (page - 1) * limit
@@ -166,6 +194,24 @@ const getAllLeadsWithPagination = async (tenantId, filters = {}) => {
         }
     }
     if (priority) matchConditions.priority = Number(priority)
+    if (owner && userRole === ROLES.SUPER_ADMIN) {
+        const User = userModel(tenantId)
+        const users = await User.find({
+            $or: [
+                { firstName: { $regex: new RegExp(owner, 'i') } },
+                { lastName: { $regex: new RegExp(owner, 'i') } }
+            ]
+        }).select('_id')
+
+        const userIds = users.map(user => user._id)
+
+        if (userIds.length > 0) {
+            matchConditions.createdBy = { $in: userIds }
+        } else {
+            // If no users match, ensure no leads are returned
+            matchConditions.createdBy = { $in: [] }
+        }
+    }
 
     const pipeline = [
         { $match: matchConditions },
@@ -213,6 +259,86 @@ const getAllLeadsWithPagination = async (tenantId, filters = {}) => {
 
     const sortOrder = order === 'asc' ? 1 : -1
 
+    // Build the nested leads lookup pipeline
+    // Build the nested leads lookup pipeline
+    const nestedMatchConditions = {
+        $expr: {
+            $and: [
+                { $eq: ['$company', '$$companyId'] },
+                { $eq: ['$deleted.isDeleted', false] }
+            ]
+        }
+    }
+
+    if (matchConditions.createdBy) {
+        nestedMatchConditions.createdBy = matchConditions.createdBy
+    }
+
+    const leadsLookupPipeline = [
+        {
+            $match: nestedMatchConditions
+        },
+        ...contactLookupStage(tenantId, {
+            localField: 'contact',
+            as: 'contact',
+            preserveNull: true
+        })
+    ]
+
+    // Only add createdBy lookup if user is super_admin
+    if (userRole === ROLES.SUPER_ADMIN) {
+        leadsLookupPipeline.push(
+            {
+                $lookup: {
+                    from: `${tenantId}_users`,
+                    let: { createdById: '$createdBy' },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $eq: ['$_id', '$$createdById']
+                                }
+                            }
+                        },
+                        {
+                            $project: {
+                                firstName: 1,
+                                lastName: 1,
+                                email: 1
+                            }
+                        }
+                    ],
+                    as: 'createdBy'
+                }
+            },
+            {
+                $unwind: {
+                    path: '$createdBy',
+                    preserveNullAndEmptyArrays: true
+                }
+            }
+        )
+    }
+
+    leadsLookupPipeline.push(
+        {
+            $addFields: {
+                name: '$contact.name',
+                email: '$contact.email',
+                phone: '$contact.phone',
+                department: '$contact.department',
+                remarks: '$contact.remarks'
+            }
+        },
+        { $sort: { createdAt: -1 } },
+        {
+            $project: {
+                deleted: 0,
+                contact: 0
+            }
+        }
+    )
+
     pipeline.push({
         $facet: {
             data: [
@@ -223,68 +349,7 @@ const getAllLeadsWithPagination = async (tenantId, filters = {}) => {
                     $lookup: {
                         from: `${tenantId}_leads`,
                         let: { companyId: '$_id' },
-                        pipeline: [
-                            {
-                                $match: {
-                                    $expr: {
-                                        $and: [
-                                            { $eq: ['$company', '$$companyId'] },
-                                            { $eq: ['$deleted.isDeleted', false] }
-                                        ]
-                                    }
-                                }
-                            },
-                            ...contactLookupStage(tenantId, {
-                                localField: 'contact',
-                                as: 'contact',
-                                preserveNull: true
-                            }),
-                            {
-                                $lookup: {
-                                    from: `${tenantId}_users`,
-                                    let: { createdById: '$createdBy' },
-                                    pipeline: [
-                                        {
-                                            $match: {
-                                                $expr: {
-                                                    $eq: ['$_id', '$$createdById']
-                                                }
-                                            }
-                                        },
-                                        {
-                                            $project: {
-                                                firstName: 1,
-                                                lastName: 1,
-                                                email: 1
-                                            }
-                                        }
-                                    ],
-                                    as: 'createdBy'
-                                }
-                            },
-                            {
-                                $unwind: {
-                                    path: '$createdBy',
-                                    preserveNullAndEmptyArrays: true
-                                }
-                            },
-                            {
-                                $addFields: {
-                                    name: '$contact.name',
-                                    email: '$contact.email',
-                                    phone: '$contact.phone',
-                                    department: '$contact.department',
-                                    remarks: '$contact.remarks'
-                                }
-                            },
-                            { $sort: { createdAt: -1 } },
-                            {
-                                $project: {
-                                    deleted: 0,
-                                    contact: 0
-                                }
-                            }
-                        ],
+                        pipeline: leadsLookupPipeline,
                         as: 'leads'
                     }
                 },

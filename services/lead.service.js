@@ -223,7 +223,9 @@ const getAllLeads = async (
         followUp,
         priority,
         serviceType,
-    } = {}
+        owner
+    } = {},
+    userRole = null
 ) => {
     // Use repository function for complex aggregation
     return await getAllLeadsWithPagination(tenantId, {
@@ -237,13 +239,14 @@ const getAllLeads = async (
         order,
         followUp,
         priority,
-        serviceType
-    })
+        serviceType,
+        owner
+    }, userRole)
 }
 
-const getLeadById = async (tenantId, id) => {
+const getLeadById = async (tenantId, id, userRole = null) => {
     // Use repository function for complex aggregation
-    return await getLeadByIdWithDetails(tenantId, id)
+    return await getLeadByIdWithDetails(tenantId, id, userRole)
 }
 
 const updateLeadById = async (tenantId, id, payload) => {

@@ -60,7 +60,7 @@ const getAll = async (request, response) => {
                 )
         }
 
-        const { tenantId } = request.user
+        const { tenantId, role } = request.user
         const {
             page,
             limit,
@@ -72,6 +72,7 @@ const getAll = async (request, response) => {
             order,
             followUp,
             serviceType,
+            owner
         } = request.query
 
         // Ensure serviceType is always an array or undefined
@@ -91,7 +92,8 @@ const getAll = async (request, response) => {
             order,
             followUp,
             serviceType: serviceTypeArray,
-        })
+            owner
+        }, role)
 
         return response.status(200).send(
             setResponseBody(
@@ -131,10 +133,10 @@ const getALeadById = async (request, response) => {
                 )
         }
 
-        const { tenantId } = request.user
+        const { tenantId, role } = request.user
         const { id } = request.params
 
-        const lead = await getLeadById(tenantId, id)
+        const lead = await getLeadById(tenantId, id, role)
 
         if (!lead) {
             throw new NotFoundError(404, 'Lead not found', ERROR_CODES.LEAD_NOT_FOUND, 'not_found')
