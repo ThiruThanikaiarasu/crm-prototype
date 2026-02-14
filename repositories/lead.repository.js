@@ -43,7 +43,8 @@ const getLeadByIdWithDetails = async (tenantId, id, userRole = null, options = {
         ...companyLeadsLookupStage(tenantId, {
             companyIdPath: '$company._id',
             currentLeadIdPath: '$_id',
-            as: 'company.leads'
+            as: 'company.leads',
+            allowDropped: options.allowDropped
         }),
         ...contactLookupStage(tenantId, {
             localField: 'contact',

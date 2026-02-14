@@ -185,8 +185,19 @@ const companyLeadsLookupStage = (tenantId, options = {}) => {
         currentLeadIdPath = '$lead._id',
         as = 'lead.company.leads',
         includeContactInfo = true,
-        sortBy = { createdAt: -1 }
+        sortBy = { createdAt: -1 },
+        allowDropped = false
     } = options
+
+    const matchConditions = [
+        { $eq: ['$company', '$$companyId'] },
+        { $eq: ['$deleted.isDeleted', false] },
+        { $ne: ['$_id', '$$currentLeadId'] }
+    ]
+
+    if (!allowDropped) {
+        matchConditions.push({ $ne: ['$status', 'dropped'] })
+    }
 
     return [
         {
@@ -200,11 +211,7 @@ const companyLeadsLookupStage = (tenantId, options = {}) => {
                     {
                         $match: {
                             $expr: {
-                                $and: [
-                                    { $eq: ['$company', '$$companyId'] },
-                                    { $eq: ['$deleted.isDeleted', false] },
-                                    { $ne: ['$_id', '$$currentLeadId'] }
-                                ]
+                                $and: matchConditions
                             }
                         }
                     },
