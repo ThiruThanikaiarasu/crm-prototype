@@ -6,6 +6,7 @@ const { validateObjectIdParam } = require('../validators/common.validator')
 const { create, getAll, getAPipelineById, updateAPipelineById, deleteAPipelineById, restoreAPipelineById, searchCompanyForPipelineHandler } = require('../controllers/pipeline.controller')
 const ROLES = require('../constants/role.constant')
 const { validateCreatePipelinePayload } = require('../validators/pipeline.validator')
+const upload = require('../middlewares/fileUpload.middleware')
 
 router.get(
     '/search/company',
@@ -19,6 +20,8 @@ router.post(
     '/',
 
     verifyUser,
+
+    upload.single('proposalDocument'),
 
     validateCreatePipelinePayload,
 
@@ -59,6 +62,8 @@ router.patch(
     verifyUser,
 
     validateObjectIdParam('id'),
+
+    upload.single('proposalDocument'),
 
     updateAPipelineById
 )

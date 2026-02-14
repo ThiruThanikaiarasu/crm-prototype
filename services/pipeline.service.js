@@ -4,84 +4,126 @@ const ConflictError = require("../errors/ConflictError")
 const NotFoundError = require("../errors/NotFoundError")
 const pipelineModel = require("../models/pipeline.model")
 const companyLeadModel = require("../models/companyLead.model")
+const { S3_BASE_URL } = require("../constants/s3.constant")
+const { uploadToS3, deleteFromS3 } = require("../services/s3.service")
+
 
 /**
  * Create a new pipeline
  */
-const createPipeline = async (tenantId, pipelineData) => {
+const createPipeline = async (tenantId, pipelineData, proposalDocument) => {
     const Pipeline = pipelineModel(tenantId)
     const CompanyLead = companyLeadModel(tenantId)
 
-    const existingPipeline = await Pipeline.findOne({
-        company: pipelineData.company,
-        'deleted.isDeleted': false
-    })
+    const session = await mongoose.startSession()
+    session.startTransaction()
+    let uploadedS3Key = null
 
-    if (existingPipeline) {
-        throw new ConflictError(
-            409,
-            'Pipeline already exists for this company',
-            ERROR_CODES.PIPELINE_ALREADY_EXISTS,
-            'conflict'
-        )
-    }
-
-    // Verify company exists
-    const company = await CompanyLead.findOne({
-        _id: pipelineData.company,
-        'deleted.isDeleted': false
-    })
-
-    if (!company) {
-        throw new NotFoundError(
-            404,
-            'Company not found',
-            ERROR_CODES.COMPANY_NOT_FOUND,
-            'not_found'
-        )
-    }
-
-    // Create pipeline
-    const pipeline = await Pipeline.create(pipelineData)
-
-    // Return pipeline with company details
-    const result = await Pipeline.aggregate([
-        {
-            $match: {
-                _id: pipeline._id
+    try {
+        // Validation: Proposal phase requires number and document
+        if (pipelineData.opportunityStage === 'proposal') {
+            if (!pipelineData.proposalNumber) {
+                throw new Error('Proposal number is required when opportunity stage is proposal')
             }
-        },
-        {
-            $lookup: {
-                from: `${tenantId}_companyleads`,
-                let: { companyId: '$company' },
-                pipeline: [
-                    {
-                        $match: {
-                            $expr: {
-                                $and: [
-                                    { $eq: ['$_id', '$$companyId'] },
-                                    { $eq: ['$deleted.isDeleted', false] }
-                                ]
-                            }
-                        }
-                    },
-                    { $project: { deleted: 0 } }
-                ],
-                as: 'company'
-            }
-        },
-        {
-            $unwind: '$company'
-        },
-        {
-            $project: {
-                deleted: 0
+            if (!proposalDocument) {
+                throw new Error('Proposal document is required when opportunity stage is proposal')
             }
         }
-    ])
 
-    return result[0] || null
+        const existingPipeline = await Pipeline.findOne({
+            company: pipelineData.company,
+            'deleted.isDeleted': false
+        }).session(session)
+
+        if (existingPipeline) {
+            throw new ConflictError(
+                409,
+                'Pipeline already exists for this company',
+                ERROR_CODES.PIPELINE_ALREADY_EXISTS,
+                'conflict'
+            )
+        }
+
+        const company = await CompanyLead.findOne({
+            _id: pipelineData.company,
+            'deleted.isDeleted': false
+        }).session(session)
+
+        if (!company) {
+            throw new NotFoundError(
+                404,
+                'Company not found',
+                ERROR_CODES.COMPANY_NOT_FOUND,
+                'not_found'
+            )
+        }
+
+        let documentData = undefined
+        if (proposalDocument) {
+            uploadedS3Key = await uploadToS3(proposalDocument)
+            documentData = {
+                originalname: proposalDocument.originalname,
+                size: proposalDocument.size,
+                mimetype: proposalDocument.mimetype,
+                s3Url: S3_BASE_URL + uploadedS3Key
+            }
+        }
+
+        const [pipeline] = await Pipeline.create([{
+            ...pipelineData,
+            proposalDocument: documentData
+        }], { session })
+
+        await session.commitTransaction()
+        session.endSession()
+
+        const result = await Pipeline.aggregate([
+            {
+                $match: {
+                    _id: pipeline._id
+                }
+            },
+            {
+                $lookup: {
+                    from: `${tenantId}_companyleads`,
+                    let: { companyId: '$company' },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        { $eq: ['$_id', '$$companyId'] },
+                                        { $eq: ['$deleted.isDeleted', false] }
+                                    ]
+                                }
+                            }
+                        },
+                        { $project: { deleted: 0 } }
+                    ],
+                    as: 'company'
+                }
+            },
+            {
+                $unwind: '$company'
+            },
+            {
+                $project: {
+                    deleted: 0
+                }
+            }
+        ])
+
+        return result[0] || null
+    } catch (error) {
+        await session.abortTransaction()
+        session.endSession()
+
+        if (uploadedS3Key) {
+            await deleteFromS3(uploadedS3Key).catch(err => console.error('Failed to cleanup S3 upload on error:', err))
+        }
+
+        throw error
+    }
 }
 
 /**
@@ -300,81 +342,137 @@ const getPipelineById = async (tenantId, pipelineId) => {
     return pipelines[0] || null
 }
 
-const updatePipelineById = async (tenantId, pipelineId, pipelineData) => {
+const updatePipelineById = async (tenantId, pipelineId, pipelineData, proposalDocument) => {
     const Pipeline = pipelineModel(tenantId)
 
-    const pipeline = await Pipeline.findOne({
-        _id: pipelineId,
-        'deleted.isDeleted': false
-    })
+    const session = await mongoose.startSession()
+    session.startTransaction()
+    let newS3Key = null
+    let oldS3Key = null
 
-    if (!pipeline) {
-        throw new NotFoundError(
-            404,
-            'Pipeline not found',
-            ERROR_CODES.PIPELINE_NOT_FOUND,
-            'not_found'
-        )
-    }
+    try {
+        const pipeline = await Pipeline.findOne({
+            _id: pipelineId,
+            'deleted.isDeleted': false
+        }).session(session)
 
-    const allowedFields = [
-        'opportunityStage',
-        'estimatedValue',
-        'probability',
-        'expectedRevnue',
-        'nextStep',
-        'followUp',
-        'remarks'
-    ]
-
-    allowedFields.forEach(field => {
-        if (pipelineData[field] !== undefined) {
-            pipeline[field] = pipelineData[field]
+        if (!pipeline) {
+            throw new NotFoundError(
+                404,
+                'Pipeline not found',
+                ERROR_CODES.PIPELINE_NOT_FOUND,
+                'not_found'
+            )
         }
-    })
 
-    await pipeline.save()
+        const effectiveStage = pipelineData.opportunityStage || pipeline.opportunityStage
+        const effectiveNumber = pipelineData.proposalNumber || pipeline.proposalNumber
+        const hasExistingDoc = pipeline.proposalDocument && pipeline.proposalDocument.s3Url
 
-    const result = await Pipeline.aggregate([
-        {
-            $match: {
-                _id: pipeline._id
+        // Validation: Proposal phase requires number and document
+        if (effectiveStage === 'proposal') {
+            if (!effectiveNumber) {
+                throw new Error('Proposal number is required when opportunity stage is proposal')
             }
-        },
-        {
-            $lookup: {
-                from: `${tenantId}_companyleads`,
-                let: { companyId: '$company' },
-                pipeline: [
-                    {
-                        $match: {
-                            $expr: {
-                                $and: [
-                                    { $eq: ['$_id', '$$companyId'] },
-                                    { $eq: ['$deleted.isDeleted', false] }
-                                ]
+            if (!proposalDocument && !hasExistingDoc) {
+                throw new Error('Proposal document is required when opportunity stage is proposal')
+            }
+        }
+
+        // Handle file upload
+        if (proposalDocument) {
+            newS3Key = await uploadToS3(proposalDocument)
+
+            if (hasExistingDoc) {
+                oldS3Key = pipeline.proposalDocument.s3Url.replace(S3_BASE_URL, '')
+            }
+
+            pipelineData.proposalDocument = {
+                originalname: proposalDocument.originalname,
+                size: proposalDocument.size,
+                mimetype: proposalDocument.mimetype,
+                s3Url: S3_BASE_URL + newS3Key
+            }
+        }
+
+        const allowedFields = [
+            'opportunityStage',
+            'estimatedValue',
+            'probability',
+            'expectedRevnue',
+            'nextStep',
+            'followUp',
+            'remarks',
+            'proposalNumber',
+            'proposalDocument'
+        ]
+
+        allowedFields.forEach(field => {
+            if (pipelineData[field] !== undefined) {
+                pipeline[field] = pipelineData[field]
+            }
+        })
+
+        await pipeline.save({ session })
+        await session.commitTransaction()
+        session.endSession()
+
+        // Cleanup old file after successful commit
+        if (oldS3Key) {
+            await deleteFromS3(oldS3Key).catch(err => console.error('Failed to delete old S3 file:', err))
+        }
+
+        const result = await Pipeline.aggregate([
+            {
+                $match: {
+                    _id: new mongoose.Types.ObjectId(pipeline._id)
+                }
+            },
+            {
+                $lookup: {
+                    from: `${tenantId}_companyleads`,
+                    let: { companyId: '$company' },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        { $eq: ['$_id', '$$companyId'] },
+                                        { $eq: ['$deleted.isDeleted', false] }
+                                    ]
+                                }
                             }
-                        }
-                    },
-                    { $project: { deleted: 0 } }
-                ],
-                as: 'company'
+                        },
+                        { $project: { deleted: 0 } }
+                    ],
+                    as: 'company'
+                }
+            },
+            {
+                $unwind: {
+                    path: '$company',
+                    preserveNullAndEmptyArrays: false
+                }
+            },
+            {
+                $project: {
+                    deleted: 0
+                }
             }
-        },
-        {
-            $unwind: {
-                path: '$company',
-                preserveNullAndEmptyArrays: false
-            }
-        },
-        {
-            $project: {
-                deleted: 0
-            }
-        }
-    ])
+        ])
 
-    return result[0] || null
+        return result[0] || null
+
+    } catch (error) {
+        await session.abortTransaction()
+        session.endSession()
+
+        if (newS3Key) {
+            await deleteFromS3(newS3Key).catch(err => console.error('Failed to cleanup new S3 upload on error:', err))
+        }
+
+        throw error
+    }
 }
 
 
@@ -485,8 +583,8 @@ const searchCompanyForPipeline = async (tenantId, search) => {
 
         {
             $project: {
-                _id:1,
-                name:1,
+                _id: 1,
+                name: 1,
                 activeLeads: 1
             }
         }

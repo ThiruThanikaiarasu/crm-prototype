@@ -42,16 +42,13 @@ const createPipelineSchema = (tenantId) => {
             proposalDocument: {
                 originalname: {
                     type: String,
-                    required: [true, 'Thumbnail Originalname is a mandatory field'],
                     trim: true,
                 },
                 size: {
                     type: Number,
-                    required: [true, 'Thumbnail Size is a mandatory field'],
                 },
                 mimetype: {
                     type: String,
-                    required: [true, 'Thumbnail Mimetype is a mandatory field'],
                     match: [
                         /^image\/(jpeg|png|gif|webp|svg\+xml)$/,
                         'Invalid MIME type. Allowed types are: jpeg, png, gif, webp, svg+xml'
@@ -59,9 +56,9 @@ const createPipelineSchema = (tenantId) => {
                 },
                 s3Url: {
                     type: String,
-                    required: [true, 'Thumbnail S3Key is a mandatory field'],
                     trim: true,
-                }
+                },
+                required: [(this.opportunityStage === 'proposal'), 'Proposal document is required when opportunity stage is proposal']
             },
             proposalNumber: {
                 type: String,
@@ -70,6 +67,7 @@ const createPipelineSchema = (tenantId) => {
                     'Only alphanumeric characters are allowed (A–Z, a–z, 0–9)'
                 ],
                 trim: true,
+                required: [(this.opportunityStage === 'proposal'), 'Proposal number is required when opportunity stage is proposal']
             },
             createdBy: {
                 type: mongoose.Schema.Types.ObjectId,

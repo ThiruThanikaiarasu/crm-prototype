@@ -36,8 +36,11 @@ const create = async (request, response) => {
             expectedRevnue,
             nextStep,
             followUp,
-            remarks
+            remarks,
+            proposalNumber
+
         } = request.body
+        const proposalDocument = request.file
 
         const pipeline = await createPipeline(tenantId, {
             company,
@@ -48,8 +51,10 @@ const create = async (request, response) => {
             nextStep,
             followUp,
             remarks,
+            proposalNumber,
             createdBy: userId
-        })
+        },
+            proposalDocument)
 
         return response.status(201).send(
             setResponseBody(
@@ -173,7 +178,8 @@ const updateAPipelineById = async (request, response) => {
         const { tenantId } = request.user
         const { id } = request.params
 
-        const pipeline = await updatePipelineById(tenantId, id, request.body)
+        const proposalDocument = request.file
+        const pipeline = await updatePipelineById(tenantId, id, request.body, proposalDocument)
 
         return response.status(200).send(
             setResponseBody(

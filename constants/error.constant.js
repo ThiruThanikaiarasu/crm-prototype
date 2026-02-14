@@ -57,6 +57,7 @@ const ERROR_CODES = {
     DATABASE_ERROR: '5002',
     TOKEN_GENERATION_FAILED: '5003',
     EXTERNAL_SERVICE_ERROR: '5004',
+    S3_UPLOAD_FAILED: '5005',
 
     // Success Codes (0xxx) - Optional
     SUCCESS: '0000',
