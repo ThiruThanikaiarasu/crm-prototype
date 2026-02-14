@@ -26,7 +26,8 @@ const getLeadByIdWithDetails = async (tenantId, id, userRole = null) => {
         {
             $match: {
                 _id: new mongoose.Types.ObjectId(id),
-                'deleted.isDeleted': false
+                'deleted.isDeleted': false,
+                status: { $ne: 'dropped' }
             }
         },
         ...companyLookupStage(tenantId, {
@@ -173,7 +174,8 @@ const getAllLeadsWithPagination = async (tenantId, filters = {}, userRole = null
 
     // Build initial match conditions
     const matchConditions = {
-        'deleted.isDeleted': false
+        'deleted.isDeleted': false,
+        status: { $ne: 'dropped' }
     }
 
     if (status) matchConditions.status = status
@@ -265,7 +267,8 @@ const getAllLeadsWithPagination = async (tenantId, filters = {}, userRole = null
         $expr: {
             $and: [
                 { $eq: ['$company', '$$companyId'] },
-                { $eq: ['$deleted.isDeleted', false] }
+                { $eq: ['$deleted.isDeleted', false] },
+                { $ne: ['$status', 'dropped'] }
             ]
         }
     }
