@@ -2,6 +2,7 @@ const mongoose = require('mongoose')
 const companyLeadModel = require('../models/companyLead.model')
 const contactLeadModel = require('../models/contactLead.model')
 const leadModel = require('../models/lead.model')
+const userModel = require('../models/user.model')
 const ConflictError = require('../errors/ConflictError')
 const NotFoundError = require('../errors/NotFoundError')
 const { ERROR_CODES } = require('../constants/error.constant')
@@ -23,6 +24,9 @@ const createLead = async (payload, tenantId, userId) => {
         const CompanyLead = companyLeadModel(tenantId)
         const ContactLead = contactLeadModel(tenantId)
         const Lead = leadModel(tenantId)
+        const User = userModel(tenantId)
+
+        const user = await User.findById(userId).select('firstName lastName email')
 
         const escapeRegex = value =>
             value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -155,7 +159,8 @@ const createLead = async (payload, tenantId, userId) => {
                     priority: lead.priority,
                     benificiary: lead.benificiary,
                     createdAt: lead.createdAt,
-                    updatedAt: lead.updatedAt
+                    updatedAt: lead.updatedAt,
+                    createdBy: user
                 }
             })
 
@@ -173,7 +178,7 @@ const createLead = async (payload, tenantId, userId) => {
                     source: null,
                     followUp: null,
                     priority: 1,
-                    userId
+                    createdBy: userId
                 }],
                 { session }
             )
@@ -194,7 +199,9 @@ const createLead = async (payload, tenantId, userId) => {
                     followUp: insertedLead.followUp,
                     priority: insertedLead.priority,
                     createdAt: insertedLead.createdAt,
-                    updatedAt: insertedLead.updatedAt
+                    createdAt: insertedLead.createdAt,
+                    updatedAt: insertedLead.updatedAt,
+                    createdBy: user
                 }]
             }
         }
