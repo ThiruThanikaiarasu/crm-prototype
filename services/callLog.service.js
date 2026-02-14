@@ -311,7 +311,8 @@ const updateCallLog = async (tenantId, id, payload) => {
             'followUp',
             'remarks',
             'callStartTime',
-            'callDuration'
+            'callDuration',
+            'outcome'
         ]
 
         allowedFields.forEach(field => {
