@@ -50,8 +50,8 @@ const createPipelineSchema = (tenantId) => {
                 mimetype: {
                     type: String,
                     match: [
-                        /^image\/(jpeg|png|gif|webp|svg\+xml)$/,
-                        'Invalid MIME type. Allowed types are: jpeg, png, gif, webp, svg+xml'
+                        /^application\/(pdf|msword|vnd\.openxmlformats-officedocument\.wordprocessingml\.document)$/,
+                        'Invalid MIME type. Allowed types are: pdf, doc, docx'
                     ],
                 },
                 s3Url: {
@@ -112,8 +112,8 @@ const createPipelineSchema = (tenantId) => {
         { collation: { locale: 'ar', strength: 1 } }
     )
 
-    pipelineSchema.pre(/^find/, function() {
-        this.where({'deleted.isDeleted': false})
+    pipelineSchema.pre(/^find/, function () {
+        this.where({ 'deleted.isDeleted': false })
     })
 
     return pipelineSchema

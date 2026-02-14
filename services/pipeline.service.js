@@ -60,6 +60,16 @@ const createPipeline = async (tenantId, pipelineData, proposalDocument) => {
 
         let documentData = undefined
         if (proposalDocument) {
+            const allowedMimeTypes = [
+                'application/pdf',
+                'application/msword',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            ]
+
+            if (!allowedMimeTypes.includes(proposalDocument.mimetype)) {
+                throw new Error('Invalid file type. Only PDF, DOC, and DOCX are allowed')
+            }
+
             uploadedS3Key = await uploadToS3(proposalDocument)
             documentData = {
                 originalname: proposalDocument.originalname,
@@ -381,6 +391,16 @@ const updatePipelineById = async (tenantId, pipelineId, pipelineData, proposalDo
 
         // Handle file upload
         if (proposalDocument) {
+            const allowedMimeTypes = [
+                'application/pdf',
+                'application/msword',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            ]
+
+            if (!allowedMimeTypes.includes(proposalDocument.mimetype)) {
+                throw new Error('Invalid file type. Only PDF, DOC, and DOCX are allowed')
+            }
+
             newS3Key = await uploadToS3(proposalDocument)
 
             if (hasExistingDoc) {
