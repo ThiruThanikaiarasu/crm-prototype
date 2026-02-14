@@ -6,6 +6,40 @@ const contactLeadModel = require('../models/contactLead.model')
 const pipelineModel = require('../models/pipeline.model')
 // Import other models as needed (pipeline, calllog, etc.)
 
+const {
+    getLeadByIdWithDetails,
+    getAllLeadsWithPagination
+} = require('../repositories/lead.repository')
+
+/**
+ * Get all filtered dropped leads
+ */
+const getDroppedLeads = async (tenantId, filters = {}, userRole = null) => {
+    // Force status to be 'dropped'
+    const droppedFilters = {
+        ...filters,
+        status: 'dropped'
+    }
+
+    // Call repository with allowDropped: true
+    return await getAllLeadsWithPagination(tenantId, droppedFilters, userRole, { allowDropped: true })
+}
+
+/**
+ * Get dropped lead by ID
+ */
+const getDroppedLeadById = async (tenantId, id, userRole = null) => {
+    // Call repository with allowDropped: true
+    const lead = await getLeadByIdWithDetails(tenantId, id, userRole, { allowDropped: true })
+
+    // Verify it is actually dropped
+    if (lead && lead.status === 'dropped') {
+        return lead
+    }
+
+    return null
+}
+
 /**
  * Get all archived/deleted leads with pagination
  */
@@ -1338,4 +1372,6 @@ module.exports = {
 
     getArchivedCallLogs,
     getArchivedCallLogById,
+    getDroppedLeads,
+    getDroppedLeadById
 }

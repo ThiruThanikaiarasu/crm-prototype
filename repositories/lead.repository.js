@@ -18,17 +18,22 @@ const {
  * @param {string} userRole - User role to determine if createdBy should be populated
  * @returns {Promise<object|null>}
  */
-const getLeadByIdWithDetails = async (tenantId, id, userRole = null) => {
+const getLeadByIdWithDetails = async (tenantId, id, userRole = null, options = {}) => {
     const Lead = leadModel(tenantId)
     const ROLES = require('../constants/role.constant')
 
+    const matchStage = {
+        _id: new mongoose.Types.ObjectId(id),
+        'deleted.isDeleted': false
+    }
+
+    if (!options.allowDropped) {
+        matchStage.status = { $ne: 'dropped' }
+    }
+
     const pipeline = [
         {
-            $match: {
-                _id: new mongoose.Types.ObjectId(id),
-                'deleted.isDeleted': false,
-                status: { $ne: 'dropped' }
-            }
+            $match: matchStage
         },
         ...companyLookupStage(tenantId, {
             localField: 'company',
@@ -139,7 +144,7 @@ const getLeadByIdWithDetails = async (tenantId, id, userRole = null) => {
  * @param {string} userRole - User role to determine permissions
  * @returns {Promise<object>}
  */
-const getAllLeadsWithPagination = async (tenantId, filters = {}, userRole = null) => {
+const getAllLeadsWithPagination = async (tenantId, filters = {}, userRole = null, options = {}) => {
     const ForbiddenError = require('../errors/ForbiddenError')
     const { ERROR_CODES } = require('../constants/error.constant')
     const ROLES = require('../constants/role.constant')
@@ -174,8 +179,11 @@ const getAllLeadsWithPagination = async (tenantId, filters = {}, userRole = null
 
     // Build initial match conditions
     const matchConditions = {
-        'deleted.isDeleted': false,
-        status: { $ne: 'dropped' }
+        'deleted.isDeleted': false
+    }
+
+    if (!options.allowDropped) {
+        matchConditions.status = { $ne: 'dropped' }
     }
 
     if (status) matchConditions.status = status
@@ -263,13 +271,18 @@ const getAllLeadsWithPagination = async (tenantId, filters = {}, userRole = null
 
     // Build the nested leads lookup pipeline
     // Build the nested leads lookup pipeline
+    const nestedAndConditions = [
+        { $eq: ['$company', '$$companyId'] },
+        { $eq: ['$deleted.isDeleted', false] }
+    ]
+
+    if (!options.allowDropped) {
+        nestedAndConditions.push({ $ne: ['$status', 'dropped'] })
+    }
+
     const nestedMatchConditions = {
         $expr: {
-            $and: [
-                { $eq: ['$company', '$$companyId'] },
-                { $eq: ['$deleted.isDeleted', false] },
-                { $ne: ['$status', 'dropped'] }
-            ]
+            $and: nestedAndConditions
         }
     }
 

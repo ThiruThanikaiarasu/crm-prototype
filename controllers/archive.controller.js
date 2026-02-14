@@ -6,7 +6,9 @@ const {
     getArchivedPipelines,
     getArchivedPipelineById,
     getArchivedCallLogs,
-    getArchivedCallLogById
+    getArchivedCallLogById,
+    getDroppedLeads,
+    getDroppedLeadById: getDroppedLeadByIdService
 } = require('../services/archive.service')
 
 /**
@@ -281,6 +283,107 @@ const getArchivedCallLog = async (request, response) => {
     }
 }
 
+/**
+ * Get all dropped leads
+ */
+const getAllDroppedLeads = async (request, response) => {
+    try {
+        const { tenantId, role } = request.user
+        const {
+            page,
+            limit,
+            contact,
+            company,
+            source,
+            sort,
+            order,
+            followUp,
+            priority,
+            serviceType,
+            owner
+        } = request.query
+
+        // Ensure serviceType is always an array or undefined
+        let serviceTypeArray = undefined
+        if (serviceType) {
+            serviceTypeArray = Array.isArray(serviceType) ? serviceType : [serviceType]
+        }
+
+        const result = await getDroppedLeads(tenantId, {
+            page,
+            limit,
+            contact,
+            company,
+            source,
+            sort,
+            order,
+            followUp,
+            priority,
+            serviceType: serviceTypeArray,
+            owner
+        }, role)
+
+        return response.status(200).send(
+            setResponseBody(
+                'Dropped leads retrieved successfully',
+                null,
+                ERROR_CODES.SUCCESS,
+                result
+            )
+        )
+    } catch (error) {
+        return response.status(500).send(
+            setResponseBody(
+                error.message,
+                ERROR_CODES.SERVER_ERROR,
+                'server_error',
+                null
+            )
+        )
+    }
+}
+
+/**
+ * Get dropped lead by ID
+ */
+const getDroppedLeadById = async (request, response) => {
+    try {
+        const { tenantId, role } = request.user
+        const { id } = request.params
+
+        const lead = await getDroppedLeadByIdService(tenantId, id, role)
+
+        if (!lead) {
+            return response.status(404).send(
+                setResponseBody(
+                    'Dropped lead not found',
+                    ERROR_CODES.LEAD_NOT_FOUND,
+                    'not_found',
+                    null
+                )
+            )
+        }
+
+        return response.status(200).send(
+            setResponseBody(
+                'Dropped lead retrieved successfully',
+                null,
+                ERROR_CODES.SUCCESS,
+                lead
+            )
+        )
+    } catch (error) {
+        return response.status(500).send(
+            setResponseBody(
+                error.message,
+                ERROR_CODES.SERVER_ERROR,
+                'server_error',
+                null
+            )
+        )
+    }
+}
+
 module.exports = {
     getAllArchivedLeads,
     getArchivedLead,
@@ -289,5 +392,8 @@ module.exports = {
     getArchivedPipeline,
 
     getAllArchivedCallLogs,
-    getArchivedCallLog
+    getArchivedCallLog,
+
+    getAllDroppedLeads,
+    getDroppedLeadById
 }
