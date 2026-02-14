@@ -178,10 +178,10 @@ const updateALeadById = async (request, response) => {
                 )
         }
 
-        const { tenantId } = request.user
+        const { tenantId, userId } = request.user
         const { id } = request.params
 
-        const lead = await updateLeadById(tenantId, id, request.body)
+        const lead = await updateLeadById(tenantId, id, request.body, userId)
 
         return response.status(200).send(
             setResponseBody(

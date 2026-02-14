@@ -256,7 +256,7 @@ const getLeadById = async (tenantId, id, userRole = null) => {
     return await getLeadByIdWithDetails(tenantId, id, userRole)
 }
 
-const updateLeadById = async (tenantId, id, payload) => {
+const updateLeadById = async (tenantId, id, payload, userId) => {
     const session = await mongoose.startSession()
 
     try {
@@ -456,8 +456,13 @@ const updateLeadById = async (tenantId, id, payload) => {
             lead.status = status
             if (status === 'dropped') {
                 lead.droppedReason = droppedReason ?? lead.droppedReason
+                lead.dropped = {
+                    by: userId,
+                    at: new Date()
+                }
             } else {
                 lead.droppedReason = undefined
+                lead.dropped = undefined
             }
         }
 

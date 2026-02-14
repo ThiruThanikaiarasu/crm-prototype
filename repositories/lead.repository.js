@@ -114,6 +114,48 @@ const getLeadByIdWithDetails = async (tenantId, id, userRole = null, options = {
                 }
             }
         )
+
+        if (options.allowDropped) {
+            pipeline.push(
+                {
+                    $lookup: {
+                        from: `${tenantId}_users`,
+                        let: { droppedById: '$dropped.by' },
+                        pipeline: [
+                            {
+                                $match: {
+                                    $expr: {
+                                        $eq: ['$_id', '$$droppedById']
+                                    }
+                                }
+                            },
+                            {
+                                $project: {
+                                    firstName: 1,
+                                    lastName: 1,
+                                    email: 1
+                                }
+                            }
+                        ],
+                        as: 'droppedBy'
+                    }
+                },
+                {
+                    $unwind: {
+                        path: '$droppedBy',
+                        preserveNullAndEmptyArrays: true
+                    }
+                },
+                {
+                    $addFields: {
+                        'dropped.by': '$droppedBy'
+                    }
+                },
+                {
+                    $project: { droppedBy: 0 }
+                }
+            )
+        }
     }
 
     pipeline.push(
@@ -335,6 +377,48 @@ const getAllLeadsWithPagination = async (tenantId, filters = {}, userRole = null
                 }
             }
         )
+
+        if (options.allowDropped) {
+            leadsLookupPipeline.push(
+                {
+                    $lookup: {
+                        from: `${tenantId}_users`,
+                        let: { droppedById: '$dropped.by' },
+                        pipeline: [
+                            {
+                                $match: {
+                                    $expr: {
+                                        $eq: ['$_id', '$$droppedById']
+                                    }
+                                }
+                            },
+                            {
+                                $project: {
+                                    firstName: 1,
+                                    lastName: 1,
+                                    email: 1
+                                }
+                            }
+                        ],
+                        as: 'droppedBy'
+                    }
+                },
+                {
+                    $unwind: {
+                        path: '$droppedBy',
+                        preserveNullAndEmptyArrays: true
+                    }
+                },
+                {
+                    $addFields: {
+                        'dropped.by': '$droppedBy'
+                    }
+                },
+                {
+                    $project: { droppedBy: 0 }
+                }
+            )
+        }
     }
 
     leadsLookupPipeline.push(

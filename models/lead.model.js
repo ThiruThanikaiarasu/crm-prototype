@@ -28,6 +28,15 @@ const createLeadSchema = (tenantId) => {
                 trim: true,
                 minlength: [1, 'Dropped reason cannot be empty']
             },
+            dropped: {
+                by: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: `${tenantId}_users`,
+                },
+                at: {
+                    type: Date,
+                }
+            },
             source: {
                 type: String,
                 minLength: [2, 'Source must be at least 2 characters'],
