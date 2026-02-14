@@ -36,6 +36,35 @@ const getCallLogByIdWithDetails = async (tenantId, id) => {
         { $unwind: '$lead' },
         ...buildLeadEnrichmentPipeline(tenantId),
         {
+            $lookup: {
+                from: `${tenantId}_users`,
+                let: { createdById: '$createdBy' },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $eq: ['$_id', '$$createdById']
+                            }
+                        }
+                    },
+                    {
+                        $project: {
+                            firstName: 1,
+                            lastName: 1,
+                            email: 1
+                        }
+                    }
+                ],
+                as: 'createdBy'
+            }
+        },
+        {
+            $unwind: {
+                path: '$createdBy',
+                preserveNullAndEmptyArrays: true
+            }
+        },
+        {
             $project: {
                 deleted: 0,
                 'lead.deleted': 0,
@@ -119,6 +148,10 @@ const getAllCallLogsWithPagination = async (tenantId, filters = {}) => {
         }
     }
 
+    if (filters.role === 'employee' && filters.userId) {
+        matchStage.createdBy = new mongoose.Types.ObjectId(filters.userId)
+    }
+
     const skip = (page - 1) * limit
     const sortOrder = order === 'asc' ? 1 : -1
 
@@ -134,6 +167,35 @@ const getAllCallLogsWithPagination = async (tenantId, filters = {}) => {
         },
         { $unwind: '$lead' },
         ...buildLeadEnrichmentPipeline(tenantId),
+        {
+            $lookup: {
+                from: `${tenantId}_users`,
+                let: { createdById: '$createdBy' },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $eq: ['$_id', '$$createdById']
+                            }
+                        }
+                    },
+                    {
+                        $project: {
+                            firstName: 1,
+                            lastName: 1,
+                            email: 1
+                        }
+                    }
+                ],
+                as: 'createdBy'
+            }
+        },
+        {
+            $unwind: {
+                path: '$createdBy',
+                preserveNullAndEmptyArrays: true
+            }
+        },
         {
             $addFields: {
                 companyNameLower: { $toLower: { $ifNull: ['$lead.company.name', ''] } },

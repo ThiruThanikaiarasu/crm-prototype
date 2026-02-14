@@ -63,7 +63,7 @@ const create = async (request, response) => {
 
 const getAll = async (request, response) => {
     try {
-        const { tenantId } = request.user
+        const { tenantId, userId, role } = request.user
 
         const {
             page,
@@ -85,6 +85,8 @@ const getAll = async (request, response) => {
             remarks,
             sort,
             order,
+            userId,
+            role
         })
 
         return response.status(201).send(

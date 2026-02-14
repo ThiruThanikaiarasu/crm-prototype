@@ -245,6 +245,8 @@ const getAllCallLogs = async (
         remarks,
         sort = 'createdAt',
         order = 'desc',
+        userId,
+        role
     } = {}
 ) => {
     // Use repository function for complex aggregation
@@ -256,7 +258,9 @@ const getAllCallLogs = async (
         followUp,
         remarks,
         sort,
-        order
+        order,
+        userId,
+        role
     })
 }
 
