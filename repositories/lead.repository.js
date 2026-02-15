@@ -319,7 +319,7 @@ const getAllLeadsWithPagination = async (tenantId, filters = {}, userRole = null
         { $eq: ['$deleted.isDeleted', false] }
     ]
 
-    if (!options.allowDropped) {
+    if (!options.allowDropped && !status) {
         nestedAndConditions.push({ $ne: ['$status', 'dropped'] })
     }
 
@@ -332,6 +332,10 @@ const getAllLeadsWithPagination = async (tenantId, filters = {}, userRole = null
     if (matchConditions.createdBy) {
         nestedMatchConditions.createdBy = matchConditions.createdBy
     }
+    if (matchConditions.status) nestedMatchConditions.status = matchConditions.status
+    if (matchConditions.source) nestedMatchConditions.source = matchConditions.source
+    if (matchConditions.priority) nestedMatchConditions.priority = matchConditions.priority
+    if (matchConditions.followUp) nestedMatchConditions.followUp = matchConditions.followUp
 
     const leadsLookupPipeline = [
         {
