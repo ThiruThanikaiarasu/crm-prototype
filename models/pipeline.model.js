@@ -58,7 +58,6 @@ const createPipelineSchema = (tenantId) => {
                     type: String,
                     trim: true,
                 },
-                required: [(this.opportunityStage === 'proposal'), 'Proposal document is required when opportunity stage is proposal']
             },
             proposalNumber: {
                 type: String,
@@ -67,7 +66,6 @@ const createPipelineSchema = (tenantId) => {
                     'Only alphanumeric characters are allowed (A–Z, a–z, 0–9)'
                 ],
                 trim: true,
-                required: [(this.opportunityStage === 'proposal'), 'Proposal number is required when opportunity stage is proposal']
             },
             createdBy: {
                 type: mongoose.Schema.Types.ObjectId,

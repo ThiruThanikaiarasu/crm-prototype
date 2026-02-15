@@ -53,8 +53,7 @@ const validateCreatePipelinePayload = [
         .isLength({ max: 1000 })
         .withMessage('Remarks must not exceed 1000 characters'),
     body('proposalNumber')
-        .if(body('opportunityStage').equals('proposal'))
-        .notEmpty().withMessage('Proposal number is required when opportunity stage is proposal')
+        .optional({ nullable: true })
         .matches(/^[a-zA-Z0-9]+$/).withMessage('Only alphanumeric characters are allowed (A–Z, a–z, 0–9)')
         .isLength({ max: 50 }).withMessage('Proposal number must not exceed 50 characters'),
 

@@ -6,12 +6,13 @@ const pipelineModel = require("../models/pipeline.model")
 const companyLeadModel = require("../models/companyLead.model")
 const { S3_BASE_URL } = require("../constants/s3.constant")
 const { uploadToS3, deleteFromS3 } = require("../services/s3.service")
+const ROLES = require("../constants/role.constant")
 
 
 /**
  * Create a new pipeline
  */
-const createPipeline = async (tenantId, pipelineData, proposalDocument) => {
+const createPipeline = async (tenantId, pipelineData, proposalDocument, role) => {
     const Pipeline = pipelineModel(tenantId)
     const CompanyLead = companyLeadModel(tenantId)
 
@@ -20,14 +21,15 @@ const createPipeline = async (tenantId, pipelineData, proposalDocument) => {
     let uploadedS3Key = null
 
     try {
-        // Validation: Proposal phase requires number and document
-        if (pipelineData.opportunityStage === 'proposal') {
-            if (!pipelineData.proposalNumber) {
-                throw new Error('Proposal number is required when opportunity stage is proposal')
-            }
-            if (!proposalDocument) {
-                throw new Error('Proposal document is required when opportunity stage is proposal')
-            }
+        // Restricted fields check
+        if ((pipelineData.proposalNumber !== undefined || proposalDocument) &&
+            ![ROLES.ADMIN, ROLES.SUPER_ADMIN].includes(role)) {
+            throw new ConflictError(
+                403,
+                'Only admin and super admin can set proposal document and proposal number',
+                ERROR_CODES.INSUFFICIENT_PERMISSIONS,
+                'authorization_error'
+            )
         }
 
         const existingPipeline = await Pipeline.findOne({
@@ -352,7 +354,7 @@ const getPipelineById = async (tenantId, pipelineId) => {
     return pipelines[0] || null
 }
 
-const updatePipelineById = async (tenantId, pipelineId, pipelineData, proposalDocument) => {
+const updatePipelineById = async (tenantId, pipelineId, pipelineData, proposalDocument, role) => {
     const Pipeline = pipelineModel(tenantId)
 
     const session = await mongoose.startSession()
@@ -375,19 +377,20 @@ const updatePipelineById = async (tenantId, pipelineId, pipelineData, proposalDo
             )
         }
 
+        // Restricted fields check
+        if ((pipelineData.proposalNumber !== undefined || proposalDocument) &&
+            ![ROLES.ADMIN, ROLES.SUPER_ADMIN].includes(role)) {
+            throw new ConflictError(
+                403,
+                'Only admin and super admin can update proposal document and proposal number',
+                ERROR_CODES.INSUFFICIENT_PERMISSIONS,
+                'authorization_error'
+            )
+        }
+
         const effectiveStage = pipelineData.opportunityStage || pipeline.opportunityStage
         const effectiveNumber = pipelineData.proposalNumber || pipeline.proposalNumber
         const hasExistingDoc = pipeline.proposalDocument && pipeline.proposalDocument.s3Url
-
-        // Validation: Proposal phase requires number and document
-        if (effectiveStage === 'proposal') {
-            if (!effectiveNumber) {
-                throw new Error('Proposal number is required when opportunity stage is proposal')
-            }
-            if (!proposalDocument && !hasExistingDoc) {
-                throw new Error('Proposal document is required when opportunity stage is proposal')
-            }
-        }
 
         // Handle file upload
         if (proposalDocument) {
