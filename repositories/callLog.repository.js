@@ -199,36 +199,44 @@ const getAllCallLogsWithPagination = async (tenantId, filters = {}) => {
             }
         },
         { $unwind: '$lead' },
-        ...buildLeadEnrichmentPipeline(tenantId),
-        {
-            $lookup: {
-                from: `${tenantId}_users`,
-                let: { createdById: '$createdBy' },
-                pipeline: [
-                    {
-                        $match: {
-                            $expr: {
-                                $eq: ['$_id', '$$createdById']
+        ...buildLeadEnrichmentPipeline(tenantId)
+    ]
+
+    if (filters.role !== 'employee') {
+        pipeline.push(
+            {
+                $lookup: {
+                    from: `${tenantId}_users`,
+                    let: { createdById: '$createdBy' },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $eq: ['$_id', '$$createdById']
+                                }
+                            }
+                        },
+                        {
+                            $project: {
+                                firstName: 1,
+                                lastName: 1,
+                                email: 1
                             }
                         }
-                    },
-                    {
-                        $project: {
-                            firstName: 1,
-                            lastName: 1,
-                            email: 1
-                        }
-                    }
-                ],
-                as: 'createdBy'
+                    ],
+                    as: 'createdBy'
+                }
+            },
+            {
+                $unwind: {
+                    path: '$createdBy',
+                    preserveNullAndEmptyArrays: true
+                }
             }
-        },
-        {
-            $unwind: {
-                path: '$createdBy',
-                preserveNullAndEmptyArrays: true
-            }
-        },
+        )
+    }
+
+    pipeline.push(
         {
             $addFields: {
                 companyNameLower: { $toLower: { $ifNull: ['$lead.company.name', ''] } },
@@ -262,7 +270,7 @@ const getAllCallLogsWithPagination = async (tenantId, filters = {}) => {
                 ]
             }
         }
-    ]
+    )
 
     const result = await CallLog.aggregate(pipeline)
     const formatted = formatPaginationResult(result, page, limit)

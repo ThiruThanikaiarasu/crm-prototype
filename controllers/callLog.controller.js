@@ -87,7 +87,8 @@ const getAll = async (request, response) => {
             sort,
             order,
             userId,
-            role
+            role,
+            owner
         })
 
         return response.status(201).send(
