@@ -1,5 +1,9 @@
 const mongoose = require('mongoose')
 const callLogModel = require('../models/callLog.model')
+const userModel = require('../models/user.model')
+const ROLES = require('../constants/role.constant')
+const ForbiddenError = require('../errors/ForbiddenError')
+const { ERROR_CODES } = require('../constants/error.constant')
 const {
     companyLookupStage,
     contactLookupStage,
@@ -148,6 +152,35 @@ const getAllCallLogsWithPagination = async (tenantId, filters = {}) => {
         }
     }
 
+    // Owner filter - moved outside of followUp condition
+    if (filters.owner) {
+        if (filters.role !== ROLES.SUPER_ADMIN) {
+            throw new ForbiddenError(
+                403,
+                'Only super admin can filter by owner',
+                ERROR_CODES.FORBIDDEN_ACCESS,
+                'forbidden'
+            )
+        }
+
+        const User = userModel(tenantId)
+        const users = await User.find({
+            $or: [
+                { firstName: { $regex: new RegExp(filters.owner, 'i') } },
+                { lastName: { $regex: new RegExp(filters.owner, 'i') } }
+            ]
+        }).select('_id')
+
+        const userIds = users.map(user => user._id)
+
+        if (userIds.length > 0) {
+            matchStage.createdBy = { $in: userIds }
+        } else {
+            matchStage.createdBy = { $in: [] }
+        }
+    }
+
+    // Employee filter
     if (filters.role === 'employee' && filters.userId) {
         matchStage.createdBy = new mongoose.Types.ObjectId(filters.userId)
     }
@@ -342,246 +375,6 @@ const getCompanyCallLogActivity = async (tenantId, companyId) => {
 
     return await CallLog.aggregate(pipeline)
 }
-
-/**
- * Get call log reports with time period, lead, and createdBy filters
- * @param {string} tenantId
- * @param {object} filters
- * @returns {Promise<object>}
- */
-// const getCallLogReports = async (tenantId, filters = {}) => {
-//     const {
-//         page = 1,
-//         limit = 10,
-//         period = 'day', // 'day', 'week', 'month'
-//         date, // specific date for filtering
-//         lead, // specific lead ID
-//         createdBy, // user who created the call log
-//         sort = 'createdAt',
-//         order = 'desc'
-//     } = filters
-
-//     const CallLog = callLogModel(tenantId)
-
-//     const matchStage = {
-//         'deleted.isDeleted': false
-//     }
-
-//     // Time period filter
-//     if (date) {
-//         const filterDate = new Date(date)
-//         let startDate, endDate
-
-//         if (period === 'day') {
-//             // Single day
-//             startDate = new Date(filterDate)
-//             startDate.setHours(0, 0, 0, 0)
-//             endDate = new Date(filterDate)
-//             endDate.setHours(23, 59, 59, 999)
-//         } else if (period === 'week') {
-//             // Week starting from the given date
-//             startDate = new Date(filterDate)
-//             startDate.setHours(0, 0, 0, 0)
-//             // Get day of week (0 = Sunday, 1 = Monday, etc.)
-//             const dayOfWeek = startDate.getDay()
-//             // Move to Monday (start of week)
-//             const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek
-//             startDate.setDate(startDate.getDate() + diff)
-
-//             endDate = new Date(startDate)
-//             endDate.setDate(endDate.getDate() + 6)
-//             endDate.setHours(23, 59, 59, 999)
-//         } else if (period === 'month') {
-//             // Entire month
-//             startDate = new Date(filterDate.getFullYear(), filterDate.getMonth(), 1)
-//             startDate.setHours(0, 0, 0, 0)
-//             endDate = new Date(filterDate.getFullYear(), filterDate.getMonth() + 1, 0)
-//             endDate.setHours(23, 59, 59, 999)
-//         }
-
-//         matchStage.createdAt = {
-//             $gte: startDate,
-//             $lte: endDate
-//         }
-//     } else {
-//         const now = new Date()
-//         let startDate, endDate
-
-//         if (period === 'day') {
-//             startDate = new Date(now)
-//             startDate.setHours(0, 0, 0, 0)
-
-//             endDate = new Date(now)
-//             endDate.setHours(23, 59, 59, 999)
-//         }
-//         else if (period === 'week') {
-//             startDate = new Date(now)
-//             startDate.setHours(0, 0, 0, 0)
-
-//             const dayOfWeek = startDate.getDay()
-//             const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek
-//             startDate.setDate(startDate.getDate() + diff)
-
-//             endDate = new Date(startDate)
-//             endDate.setDate(endDate.getDate() + 6)
-//             endDate.setHours(23, 59, 59, 999)
-//         }
-//         else if (period === 'month') {
-//             startDate = new Date(now.getFullYear(), now.getMonth(), 1)
-//             startDate.setHours(0, 0, 0, 0)
-
-//             endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-//             endDate.setHours(23, 59, 59, 999)
-//         }
-
-//         matchStage.callStartTime = {
-//             $gte: startDate,
-//             $lte: endDate
-//         }
-//     }
-
-
-//     // Lead filter
-//     if (lead) {
-//         matchStage.lead = new mongoose.Types.ObjectId(lead)
-//     }
-
-//     // CreatedBy filter
-//     if (createdBy) {
-//         matchStage.createdBy = new mongoose.Types.ObjectId(createdBy)
-//     }
-
-//     const skip = (page - 1) * limit
-//     const sortOrder = order === 'asc' ? 1 : -1
-
-//     const pipeline = [
-//         { $match: matchStage },
-//         {
-//             $lookup: {
-//                 from: `${tenantId}_leads`,
-//                 localField: 'lead',
-//                 foreignField: '_id',
-//                 as: 'lead'
-//             }
-//         },
-//         { $unwind: '$lead' },
-//         ...buildLeadEnrichmentPipeline(tenantId),
-//         {
-//             $lookup: {
-//                 from: `${tenantId}_users`,
-//                 let: { createdById: '$createdBy' },
-//                 pipeline: [
-//                     {
-//                         $match: {
-//                             $expr: {
-//                                 $eq: ['$_id', '$$createdById']
-//                             }
-//                         }
-//                     },
-//                     {
-//                         $project: {
-//                             _id: 1,
-//                             firstName: 1,
-//                             lastName: 1,
-//                             email: 1
-//                         }
-//                     }
-//                 ],
-//                 as: 'createdByUser'
-//             }
-//         },
-//         {
-//             $unwind: {
-//                 path: '$createdByUser',
-//                 preserveNullAndEmptyArrays: true
-//             }
-//         },
-//         {
-//             $addFields: {
-//                 companyNameLower: { $toLower: { $ifNull: ['$lead.company.name', ''] } },
-//                 contactNameLower: { $toLower: { $ifNull: ['$lead.contact.name', ''] } }
-//             }
-//         },
-//         {
-//             $facet: {
-//                 data: [
-//                     {
-//                         $sort: {
-//                             [sort === 'company' ? 'companyNameLower' :
-//                                 sort === 'contact' ? 'contactNameLower' :
-//                                     sort]: sortOrder
-//                         }
-//                     },
-//                     { $skip: skip },
-//                     { $limit: Number(limit) },
-//                     {
-//                         $project: {
-//                             deleted: 0,
-//                             'lead.deleted': 0,
-//                             'lead.contact': 0,
-//                             companyNameLower: 0,
-//                             contactNameLower: 0
-//                         }
-//                     }
-//                 ],
-//                 totalCount: [
-//                     { $count: 'count' }
-//                 ],
-//                 // Add summary statistics
-//                 summary: [
-//                     {
-//                         $group: {
-//                             _id: null,
-//                             totalCalls: { $sum: 1 },
-//                             outcomes: {
-//                                 $push: '$outcome'
-//                             }
-//                         }
-//                     },
-//                     {
-//                         $project: {
-//                             _id: 0,
-//                             totalCalls: 1,
-//                             outcomeCounts: {
-//                                 $arrayToObject: {
-//                                     $map: {
-//                                         input: {
-//                                             $setUnion: '$outcomes'
-//                                         },
-//                                         as: 'outcome',
-//                                         in: {
-//                                             k: '$$outcome',
-//                                             v: {
-//                                                 $size: {
-//                                                     $filter: {
-//                                                         input: '$outcomes',
-//                                                         cond: { $eq: ['$$this', '$$outcome'] }
-//                                                     }
-//                                                 }
-//                                             }
-//                                         }
-//                                     }
-//                                 }
-//                             }
-//                         }
-//                     }
-//                 ]
-//             }
-//         }
-//     ]
-
-//     const result = await CallLog.aggregate(pipeline)
-//     const formatted = formatPaginationResult(result, page, limit)
-
-//     return {
-//         callLogs: formatted.data,
-//         info: formatted.info,
-//         summary: result[0]?.summary[0] || {
-//             totalCalls: 0,
-//             outcomeCounts: {}
-//         }
-//     }
-// }
 
 const getCallLogReports = async (tenantId, filters = {}) => {
     const {

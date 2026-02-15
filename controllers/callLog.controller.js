@@ -74,6 +74,7 @@ const getAll = async (request, response) => {
             remarks,
             sort,
             order,
+            owner
         } = request.query
 
         const callLogs = await getAllCallLogs(tenantId, {
