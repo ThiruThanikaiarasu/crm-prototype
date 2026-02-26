@@ -15,29 +15,105 @@ const {
     getCompanyCallLogActivity,
     getCallLogReports
 } = require('../repositories/callLog.repository')
-const { searchCompaniesWithPagination } = require('../repositories/company.repository')
 
 /**
- * Search companies by name
+ * Search companies that have at least one lead with status not 'new' or 'dropped'
+ * Returns company details only (no lead/contact details), deduplicated
  */
 const searchCompanies = async (tenantId, { search = '', page = 1, limit = 10 } = {}) => {
-    // Use repository function for company search
-    return await searchCompaniesWithPagination(tenantId, { search, page, limit })
+    const CompanyLead = companyLeadModel(tenantId)
+
+    const matchStage = {
+        'deleted.isDeleted': false
+    }
+
+    if (search) {
+        matchStage.name = { $regex: search, $options: 'i' }
+    }
+
+    const skip = (page - 1) * limit
+
+    const result = await CompanyLead.aggregate([
+        { $match: matchStage },
+
+        /* ---- Lookup leads that are eligible (not new, not dropped) ---- */
+        {
+            $lookup: {
+                from: `${tenantId}_leads`,
+                let: { companyId: '$_id' },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $and: [
+                                    { $eq: ['$company', '$$companyId'] },
+                                    { $eq: ['$deleted.isDeleted', false] },
+                                    { $not: { $in: ['$status', ['new', 'dropped']] } }
+                                ]
+                            }
+                        }
+                    },
+                    { $limit: 1 },
+                    { $project: { _id: 1 } }
+                ],
+                as: 'eligibleLeads'
+            }
+        },
+
+        /* ---- Only keep companies with at least one eligible lead ---- */
+        {
+            $match: {
+                'eligibleLeads.0': { $exists: true }
+            }
+        },
+
+        { $project: { deleted: 0, eligibleLeads: 0 } },
+
+        {
+            $facet: {
+                data: [
+                    { $sort: { name: 1 } },
+                    { $skip: skip },
+                    { $limit: Number(limit) }
+                ],
+                totalCount: [
+                    { $count: 'count' }
+                ]
+            }
+        }
+    ])
+
+    const data = result[0]?.data || []
+    const total = result[0]?.totalCount[0]?.count || 0
+    const totalPages = Math.ceil(total / limit)
+
+    return {
+        companies: data,
+        info: {
+            total,
+            page: Number(page),
+            limit: Number(limit),
+            totalPages,
+            hasMoreRecords: page < totalPages
+        }
+    }
 }
 
 /**
  * Search leads by company ID
+ * Returns leads for a specific company with status not 'new' or 'dropped'
  */
-const searchLeads = async (tenantId) => {
+const searchLeads = async (tenantId, companyId) => {
 
     const Lead = leadModel(tenantId)
 
     const leads = await Lead.aggregate([
         {
             $match: {
+                company: new mongoose.Types.ObjectId(companyId),
                 'deleted.isDeleted': false,
                 status: {
-                    $nin: ['new', 'qualified', 'dropped']
+                    $nin: ['new', 'dropped']
                 }
             }
         },

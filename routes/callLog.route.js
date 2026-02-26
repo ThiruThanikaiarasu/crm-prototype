@@ -17,9 +17,11 @@ router.get(
 )
 
 router.get(
-    '/search/leads',
+    '/search/leads/:companyId',
 
     verifyUser,
+
+    validateObjectIdParam('companyId'),
 
     searchLeadsForCallLogHandler
 )

@@ -267,9 +267,24 @@ const searchCompaniesHandler = async (request, response) => {
 
 const searchLeadsForCallLogHandler = async (request, response) => {
     try {
-        const { tenantId } = request.user
+        const errors = validationResult(request)
+        if (!errors.isEmpty()) {
+            return response
+                .status(400)
+                .send(
+                    setResponseBody(
+                        errors.array()[0].msg,
+                        ERROR_CODES.VALIDATION_ERROR,
+                        'validation_error',
+                        null,
+                    ),
+                )
+        }
 
-        const leads = await searchLeads(tenantId)
+        const { tenantId } = request.user
+        const { companyId } = request.params
+
+        const leads = await searchLeads(tenantId, companyId)
 
         return response.status(200).send(
             setResponseBody(

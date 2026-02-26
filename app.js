@@ -14,6 +14,7 @@ const callLogRoute = require('./routes/callLog.route')
 const callLogReportRoute = require('./routes/callLogReport.route')
 const pipelineRoute = require('./routes/pipeline.route')
 const archiveRoute = require('./routes/archive.route')
+const prospectusRoute = require('./routes/prospectus.route')
 
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./configurations/swagger.config');
@@ -44,5 +45,6 @@ app.use('/api/v1/call-logs', callLogRoute)
 app.use('/api/v1/reports/call-logs', callLogReportRoute)
 app.use('/api/v1/pipeline', pipelineRoute)
 app.use('/api/v1/archive', archiveRoute)
+app.use('/api/v1/prospectus', prospectusRoute)
 
 module.exports = app

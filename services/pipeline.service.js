@@ -628,17 +628,6 @@ const searchCompanyForPipeline = async (tenantId, search) => {
             }
         },
 
-        /* -------------------- Exclude companies with an active pipeline -------------------- */
-        // {
-        //     $match: {
-        //         'pipelines': {
-        //             $not: {
-        //                 $elemMatch: { 'deleted.isDeleted': false }
-        //             }
-        //         }
-        //     }
-        // },
-
         /* -------------------- Add isArchived flag -------------------- */
         {
             $addFields: {
