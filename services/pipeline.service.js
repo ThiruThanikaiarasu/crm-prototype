@@ -604,11 +604,67 @@ const searchCompanyForPipeline = async (tenantId, search) => {
             }
         },
 
+        /* -------------------- Lookup pipelines for this company -------------------- */
+        {
+            $lookup: {
+                from: `${tenantId}_pipelines`,
+                let: { companyId: '$_id' },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $eq: ['$company', '$$companyId']
+                            }
+                        }
+                    },
+                    {
+                        $project: {
+                            _id: 1,
+                            'deleted.isDeleted': 1
+                        }
+                    }
+                ],
+                as: 'pipelines'
+            }
+        },
+
+        /* -------------------- Exclude companies with an active pipeline -------------------- */
+        // {
+        //     $match: {
+        //         'pipelines': {
+        //             $not: {
+        //                 $elemMatch: { 'deleted.isDeleted': false }
+        //             }
+        //         }
+        //     }
+        // },
+
+        /* -------------------- Add isArchived flag -------------------- */
+        {
+            $addFields: {
+                isArchived: {
+                    $gt: [
+                        {
+                            $size: {
+                                $filter: {
+                                    input: '$pipelines',
+                                    as: 'p',
+                                    cond: { $eq: ['$$p.deleted.isDeleted', true] }
+                                }
+                            }
+                        },
+                        0
+                    ]
+                }
+            }
+        },
+
         {
             $project: {
                 _id: 1,
                 name: 1,
-                activeLeads: 1
+                activeLeads: 1,
+                isArchived: 1
             }
         }
     ])
