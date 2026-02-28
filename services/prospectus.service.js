@@ -248,11 +248,11 @@ const _convertProspectusToLead = async (tenantId, prospectus, userId, session) =
         [companyLead] = await CompanyLead.create([companyData], { session })
     }
 
-    // Create contact lead if contact exists
+    // Create contact lead if contact exists and has a name (required in ContactLead)
     let contactLead = null
     if (prospectus.contact) {
         const contactProspectusData = await ContactProspectus.findById(prospectus.contact).session(session)
-        if (contactProspectusData) {
+        if (contactProspectusData && contactProspectusData.name) {
             const contactData = contactProspectusData.toObject()
             delete contactData._id
             delete contactData.deleted
