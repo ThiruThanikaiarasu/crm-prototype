@@ -144,16 +144,8 @@ const leadLookupStage = (tenantId, options = {}) => {
                 preserveNull: true
             }),
             {
-                $addFields: {
-                    name: '$contact.name',
-                    email: '$contact.email',
-                    phone: '$contact.phone'
-                }
-            },
-            {
                 $project: {
-                    deleted: 0,
-                    contact: 0
+                    deleted: 0
                 }
             }
         )
@@ -222,16 +214,8 @@ const companyLeadsLookupStage = (tenantId, options = {}) => {
                             preserveNull: true
                         }),
                         {
-                            $addFields: {
-                                name: '$contact.name',
-                                email: '$contact.email',
-                                phone: '$contact.phone'
-                            }
-                        },
-                        {
                             $project: {
-                                deleted: 0,
-                                contact: 0
+                                deleted: 0
                             }
                         }
                     ] : []),

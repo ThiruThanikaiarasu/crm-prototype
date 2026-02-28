@@ -82,18 +82,18 @@ const createLead = async (payload, tenantId, userId) => {
                     $or: []
                 }
 
-                if (leadData?.email) {
+                if (leadData?.contact?.email) {
                     contactQuery.$or.push({
                         email: {
-                            $regex: `^${escapeRegex(leadData.email)}$`,
+                            $regex: `^${escapeRegex(leadData.contact.email)}$`,
                             $options: 'i'
                         }
                     })
                 }
 
-                if (leadData?.phone?.number) {
+                if (leadData?.contact?.phone?.number) {
                     contactQuery.$or.push({
-                        'phone.number': leadData.phone.number
+                        'phone.number': leadData.contact.phone.number
                     })
                 }
 
@@ -110,10 +110,7 @@ const createLead = async (payload, tenantId, userId) => {
                 }
             }
 
-            const contactsToInsert = leadsPayload.map(leadData => {
-                const { status, source, followUp, priority, droppedReason, benificiary, ...contactInfo } = leadData
-                return contactInfo
-            })
+            const contactsToInsert = leadsPayload.map(leadData => leadData.contact || {})
 
             const contactLeads = await ContactLead.insertMany(
                 contactsToInsert,
@@ -144,15 +141,11 @@ const createLead = async (payload, tenantId, userId) => {
             delete companyObj.deleted
 
             const formattedLeads = insertedLeads.map((lead, index) => {
-                const contactInfo = contactLeads[index].toObject()
+                const { _id: contactId, deleted, createdAt: _cAt, updatedAt: _uAt, ...contactFields } = contactLeads[index].toObject()
                 return {
                     _id: lead._id,
                     company: companyLead._id,
-                    name: contactInfo.name,
-                    email: contactInfo.email,
-                    phone: contactInfo.phone,
-                    department: contactInfo.department,
-                    remarks: contactInfo.remarks,
+                    contact: Object.keys(contactFields).length > 0 ? { _id: contactId, ...contactFields } : null,
                     status: lead.status,
                     source: lead.source,
                     followUp: lead.followUp,
@@ -191,14 +184,11 @@ const createLead = async (payload, tenantId, userId) => {
                 leads: [{
                     _id: insertedLead._id,
                     company: companyLead._id,
-                    name: null,
-                    email: null,
-                    phone: null,
+                    contact: null,
                     status: insertedLead.status,
                     source: insertedLead.source,
                     followUp: insertedLead.followUp,
                     priority: insertedLead.priority,
-                    createdAt: insertedLead.createdAt,
                     createdAt: insertedLead.createdAt,
                     updatedAt: insertedLead.updatedAt,
                     createdBy: user
@@ -277,7 +267,7 @@ const updateLeadById = async (tenantId, id, payload, userId) => {
             )
         }
 
-        const { company, leads, name, email, phone, department, remarks, status, source, followUp, priority, droppedReason, benificiary } = payload
+        const { company, leads, contact, status, source, followUp, priority, droppedReason, benificiary } = payload
 
         if (company && Object.keys(company).length > 0) {
             const companyUpdateData = {}
@@ -324,17 +314,19 @@ const updateLeadById = async (tenantId, id, payload, userId) => {
         }
 
         const contactUpdateData = {}
-        if (name !== undefined) contactUpdateData.name = name
-        if (email !== undefined) contactUpdateData.email = email
-        if (department !== undefined) contactUpdateData.department = department
-        if (remarks !== undefined) contactUpdateData.remarks = remarks
+        if (contact && typeof contact === 'object') {
+            if (contact.name !== undefined) contactUpdateData.name = contact.name
+            if (contact.email !== undefined) contactUpdateData.email = contact.email
+            if (contact.department !== undefined) contactUpdateData.department = contact.department
+            if (contact.remarks !== undefined) contactUpdateData.remarks = contact.remarks
 
-        if (phone && typeof phone === 'object') {
-            Object.keys(phone).forEach(phoneKey => {
-                if (phone[phoneKey] !== undefined) {
-                    contactUpdateData[`phone.${phoneKey}`] = phone[phoneKey]
-                }
-            })
+            if (contact.phone && typeof contact.phone === 'object') {
+                Object.keys(contact.phone).forEach(phoneKey => {
+                    if (contact.phone[phoneKey] !== undefined) {
+                        contactUpdateData[`phone.${phoneKey}`] = contact.phone[phoneKey]
+                    }
+                })
+            }
         }
 
         if (Object.keys(contactUpdateData).length > 0) {
@@ -366,18 +358,18 @@ const updateLeadById = async (tenantId, id, payload, userId) => {
                     $or: []
                 }
 
-                if (leadData?.email && typeof leadData.email === 'string' && leadData.email.trim().length > 0) {
+                if (leadData?.contact?.email && typeof leadData.contact.email === 'string' && leadData.contact.email.trim().length > 0) {
                     contactQuery.$or.push({
                         email: {
-                            $regex: `^${escapeRegex(leadData.email)}$`,
+                            $regex: `^${escapeRegex(leadData.contact.email)}$`,
                             $options: 'i'
                         }
                     })
                 }
 
-                if (leadData?.phone?.number && typeof leadData.phone.number === 'string' && leadData.phone.number.trim().length > 0) {
+                if (leadData?.contact?.phone?.number && typeof leadData.contact.phone.number === 'string' && leadData.contact.phone.number.trim().length > 0) {
                     contactQuery.$or.push({
-                        'phone.number': leadData.phone.number
+                        'phone.number': leadData.contact.phone.number
                     })
                 }
 
@@ -395,10 +387,7 @@ const updateLeadById = async (tenantId, id, payload, userId) => {
             }
 
             if (leadsToProcess.length > 0) {
-                const contactsToInsert = leadsToProcess.map(leadData => {
-                    const { status, source, followUp, priority, droppedReason, benificiary, ...contactInfo } = leadData
-                    return contactInfo
-                })
+                const contactsToInsert = leadsToProcess.map(leadData => leadData.contact || {})
                 const insertedContacts = await ContactLead.insertMany(
                     contactsToInsert,
                     { session }

@@ -160,18 +160,8 @@ const getLeadByIdWithDetails = async (tenantId, id, userRole = null, options = {
 
     pipeline.push(
         {
-            $addFields: {
-                name: '$contact.name',
-                email: '$contact.email',
-                phone: '$contact.phone',
-                department: '$contact.department',
-                remarks: '$contact.remarks'
-            }
-        },
-        {
             $project: {
-                deleted: 0,
-                contact: 0
+                deleted: 0
             }
         }
     )
@@ -426,20 +416,10 @@ const getAllLeadsWithPagination = async (tenantId, filters = {}, userRole = null
     }
 
     leadsLookupPipeline.push(
-        {
-            $addFields: {
-                name: '$contact.name',
-                email: '$contact.email',
-                phone: '$contact.phone',
-                department: '$contact.department',
-                remarks: '$contact.remarks'
-            }
-        },
         { $sort: { createdAt: -1 } },
         {
             $project: {
-                deleted: 0,
-                contact: 0
+                deleted: 0
             }
         }
     )

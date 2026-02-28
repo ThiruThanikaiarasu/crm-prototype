@@ -117,44 +117,44 @@ const validateCreateANewLeadLeadPayload = [
         .isArray()
         .withMessage('Leads must be an array'),
 
-    body('leads.*.name')
+    body('leads.*.contact.name')
         .optional({ nullable: true })
         .isLength({ min: 2, max: 50 })
         .withMessage('Contact name must be between 2 and 50 characters'),
 
     // Contact phone validation
-    body('leads.*.phone.countryCode')
+    body('leads.*.contact.phone.countryCode')
         .optional({ nullable: true })
         .isLength({ max: 5 })
         .withMessage('Phone country code must be fewer than 5 characters')
         .matches(/^\+\d+$/)
         .withMessage('Phone country code must start with + and contain numbers only'),
 
-    body('leads.*.phone.number')
+    body('leads.*.contact.phone.number')
         .optional({ nullable: true })
         .isLength({ min: 8, max: 15 })
         .withMessage('Phone number must be between 8 and 15 digits')
         .matches(/^\d+$/)
         .withMessage('Phone number must contain digits only'),
 
-    body('leads.*.phone.extension')
+    body('leads.*.contact.phone.extension')
         .optional({ nullable: true })
         .isLength({ max: 10 })
         .withMessage('Phone extension must be fewer than 10 characters')
         .matches(/^\d+$/)
         .withMessage('Phone extension must contain digits only'),
 
-    body('leads.*.email')
+    body('leads.*.contact.email')
         .optional({ nullable: true })
         .isEmail()
         .withMessage('Please provide a valid email address'),
 
-    body('leads.*.department')
+    body('leads.*.contact.department')
         .optional({ nullable: true })
         .isLength({ min: 2, max: 50 })
         .withMessage('Department must be between 2 and 50 characters'),
 
-    body('leads.*.remarks')
+    body('leads.*.contact.remarks')
         .optional({ nullable: true })
         .isLength({ min: 2, max: 255 })
         .withMessage('Remarks must be between 2 and 255 characters'),
