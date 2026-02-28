@@ -274,7 +274,7 @@ const _convertProspectusToLead = async (tenantId, prospectus, userId, session) =
         [{
             company: companyLead._id,
             contact: contactLead ? contactLead._id : null,
-            status: 'new',
+            status: prospectus.status || 'new',
             source: prospectus.source || null,
             followUp: prospectus.followUp || null,
             priority: prospectus.priority || 0,
