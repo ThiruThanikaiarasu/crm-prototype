@@ -22,149 +22,103 @@ const getLeadByIdWithDetails = async (tenantId, id, userRole = null, options = {
     const Lead = leadModel(tenantId)
     const ROLES = require('../constants/role.constant')
 
-    const matchStage = {
+    // Match the specific lead to verify it exists and get its company
+    const initialMatchStage = {
         _id: new mongoose.Types.ObjectId(id),
         'deleted.isDeleted': false
     }
-
     if (!options.allowDropped) {
-        matchStage.status = { $ne: 'dropped' }
+        initialMatchStage.status = { $ne: 'dropped' }
     }
 
-    const pipeline = [
-        {
-            $match: matchStage
-        },
-        ...companyLookupStage(tenantId, {
-            localField: 'company',
-            as: 'company',
-            preserveNull: false
-        }),
-        ...companyLeadsLookupStage(tenantId, {
-            companyIdPath: '$company._id',
-            currentLeadIdPath: '$_id',
-            as: 'company.leads',
-            allowDropped: options.allowDropped
-        }),
+    // Build the nested leads pipeline (all leads for the company)
+    const nestedAndConditions = [
+        { $eq: ['$company', '$$companyId'] },
+        { $eq: ['$deleted.isDeleted', false] }
+    ]
+    if (!options.allowDropped) {
+        nestedAndConditions.push({ $ne: ['$status', 'dropped'] })
+    }
+
+    const nestedLeadsPipeline = [
+        { $match: { $expr: { $and: nestedAndConditions } } },
         ...contactLookupStage(tenantId, {
             localField: 'contact',
             as: 'contact',
             preserveNull: true
-        }),
-        {
-            $lookup: {
-                from: `${tenantId}_users`,
-                let: { ownerId: '$owner' },
-                pipeline: [
-                    {
-                        $match: {
-                            $expr: {
-                                $eq: ['$_id', '$$ownerId']
-                            }
-                        }
-                    },
-                    {
-                        $project: {
-                            password: 0,
-                            deleted: 0
-                        }
-                    }
-                ],
-                as: 'owner'
-            }
-        },
-        {
-            $unwind: {
-                path: '$owner',
-                preserveNullAndEmptyArrays: true
-            }
-        }
+        })
     ]
 
-    // Only add createdBy lookup if user is super_admin
     if (userRole === ROLES.SUPER_ADMIN) {
-        pipeline.push(
+        nestedLeadsPipeline.push(
             {
                 $lookup: {
                     from: `${tenantId}_users`,
                     let: { createdById: '$createdBy' },
                     pipeline: [
-                        {
-                            $match: {
-                                $expr: {
-                                    $eq: ['$_id', '$$createdById']
-                                }
-                            }
-                        },
-                        {
-                            $project: {
-                                firstName: 1,
-                                lastName: 1,
-                                email: 1
-                            }
-                        }
+                        { $match: { $expr: { $eq: ['$_id', '$$createdById'] } } },
+                        { $project: { firstName: 1, lastName: 1, email: 1 } }
                     ],
                     as: 'createdBy'
                 }
             },
-            {
-                $unwind: {
-                    path: '$createdBy',
-                    preserveNullAndEmptyArrays: true
-                }
-            }
+            { $unwind: { path: '$createdBy', preserveNullAndEmptyArrays: true } }
         )
 
         if (options.allowDropped) {
-            pipeline.push(
+            nestedLeadsPipeline.push(
                 {
                     $lookup: {
                         from: `${tenantId}_users`,
                         let: { droppedById: '$dropped.by' },
                         pipeline: [
-                            {
-                                $match: {
-                                    $expr: {
-                                        $eq: ['$_id', '$$droppedById']
-                                    }
-                                }
-                            },
-                            {
-                                $project: {
-                                    firstName: 1,
-                                    lastName: 1,
-                                    email: 1
-                                }
-                            }
+                            { $match: { $expr: { $eq: ['$_id', '$$droppedById'] } } },
+                            { $project: { firstName: 1, lastName: 1, email: 1 } }
                         ],
                         as: 'droppedBy'
                     }
                 },
-                {
-                    $unwind: {
-                        path: '$droppedBy',
-                        preserveNullAndEmptyArrays: true
-                    }
-                },
-                {
-                    $addFields: {
-                        'dropped.by': '$droppedBy'
-                    }
-                },
-                {
-                    $project: { droppedBy: 0 }
-                }
+                { $unwind: { path: '$droppedBy', preserveNullAndEmptyArrays: true } },
+                { $addFields: { 'dropped.by': '$droppedBy' } },
+                { $project: { droppedBy: 0 } }
             )
         }
     }
 
-    pipeline.push(
+    nestedLeadsPipeline.push(
+        { $sort: { createdAt: -1 } },
+        { $project: { deleted: 0 } }
+    )
+
+    const pipeline = [
+        { $match: initialMatchStage },
+        ...companyLookupStage(tenantId, {
+            localField: 'company',
+            as: 'company',
+            preserveNull: false
+        }),
+        {
+            $group: {
+                _id: '$company._id',
+                company: { $first: '$company' }
+            }
+        },
+        {
+            $lookup: {
+                from: `${tenantId}_leads`,
+                let: { companyId: '$_id' },
+                pipeline: nestedLeadsPipeline,
+                as: 'leads'
+            }
+        },
         {
             $project: {
-                deleted: 0
+                _id: 0,
+                company: 1,
+                leads: 1
             }
         }
-    )
+    ]
 
     const result = await Lead.aggregate(pipeline)
     return result.length > 0 ? result[0] : null
