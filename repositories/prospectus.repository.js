@@ -112,16 +112,7 @@ const companyProspectusLeadsLookupStage = (tenantId, options = {}) => {
                         preserveNull: true
                     }),
                     {
-                        $addFields: {
-                            name: '$contact.name',
-                            email: '$contact.email',
-                            phone: '$contact.phone',
-                            department: '$contact.department',
-                            remarks: '$contact.remarks'
-                        }
-                    },
-                    {
-                        $project: { deleted: 0, contact: 0 }
+                        $project: { deleted: 0 }
                     },
                     { $sort: { createdAt: -1 } }
                 ],
@@ -203,18 +194,8 @@ const getProspectusById = async (tenantId, id, userRole = null) => {
 
     pipeline.push(
         {
-            $addFields: {
-                name: '$contact.name',
-                email: '$contact.email',
-                phone: '$contact.phone',
-                department: '$contact.department',
-                remarks: '$contact.remarks'
-            }
-        },
-        {
             $project: {
-                deleted: 0,
-                contact: 0
+                deleted: 0
             }
         }
     )
@@ -389,20 +370,10 @@ const getAllProspectusWithPagination = async (tenantId, filters = {}, userRole =
     }
 
     nestedLookupPipeline.push(
-        {
-            $addFields: {
-                name: '$contact.name',
-                email: '$contact.email',
-                phone: '$contact.phone',
-                department: '$contact.department',
-                remarks: '$contact.remarks'
-            }
-        },
         { $sort: { createdAt: -1 } },
         {
             $project: {
-                deleted: 0,
-                contact: 0
+                deleted: 0
             }
         }
     )

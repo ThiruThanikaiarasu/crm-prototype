@@ -107,15 +107,11 @@ const _createSingleProspectus = async (payload, tenantId, userId, session) => {
         delete companyObj.deleted
 
         const formattedProspectuses = insertedProspectuses.map((prospectus, index) => {
-            const contactInfo = contactProspectuses[index].toObject()
+            const { _id: contactId, deleted, createdAt: _cAt, updatedAt: _uAt, ...contactFields } = contactProspectuses[index].toObject()
             return {
                 _id: prospectus._id,
                 company: companyProspectus._id,
-                name: contactInfo.name,
-                email: contactInfo.email,
-                phone: contactInfo.phone,
-                department: contactInfo.department,
-                remarks: contactInfo.remarks,
+                contact: Object.keys(contactFields).length > 0 ? { _id: contactId, ...contactFields } : null,
                 status: prospectus.status,
                 source: prospectus.source,
                 followUp: prospectus.followUp,
@@ -151,9 +147,7 @@ const _createSingleProspectus = async (payload, tenantId, userId, session) => {
             prospectuses: [{
                 _id: insertedProspectus._id,
                 company: companyProspectus._id,
-                name: null,
-                email: null,
-                phone: null,
+                contact: null,
                 status: insertedProspectus.status,
                 source: insertedProspectus.source,
                 followUp: insertedProspectus.followUp,
@@ -283,7 +277,7 @@ const _convertProspectusToLead = async (tenantId, prospectus, userId, session) =
         }],
         { session }
     )
-
+    console.log(companyLead._id)
     return companyLead._id
 }
 
@@ -469,7 +463,7 @@ const updateProspectusById = async (tenantId, id, payload, userId) => {
                         'bad_request'
                     )
                 }
-
+                console.log("yes")
                 const companyLeadId = await _convertProspectusToLead(tenantId, prospectus, userId, session)
                 prospectus.convertedToLead = {
                     isConverted: true,
