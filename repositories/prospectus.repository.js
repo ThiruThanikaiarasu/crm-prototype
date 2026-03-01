@@ -321,7 +321,7 @@ const getAllProspectusWithPagination = async (tenantId, filters = {}, userRole =
                 maxCreatedAt: { $max: '$createdAt' },
                 companyNameLower: { $first: { $toLower: '$company.name' } },
                 contactFirstNameLower: { $first: { $toLower: '$contact.name' } },
-                minStatusOrder: { $min: '$statusOrder' }
+                minStatusOrder: { $max: '$statusOrder' }
             }
         }
     )
