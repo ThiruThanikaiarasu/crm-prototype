@@ -99,94 +99,94 @@ const companyFields = [
 ]
 
 const contactFields = [
-    body('leads')
+    body('prospectuses')
         .optional({ nullable: true })
         .isArray()
-        .withMessage('Leads must be an array'),
+        .withMessage('Prospectuses must be an array'),
 
-    body('leads.*.contact.name')
+    body('prospectuses.*.contact.name')
         .optional({ nullable: true })
         .isLength({ min: 2, max: 50 })
         .withMessage('Contact name must be between 2 and 50 characters'),
 
-    body('leads.*.contact.phone.countryCode')
+    body('prospectuses.*.contact.phone.countryCode')
         .optional({ nullable: true })
         .isLength({ max: 5 })
         .withMessage('Phone country code must be fewer than 5 characters')
         .matches(/^\+\d+$/)
         .withMessage('Phone country code must start with + and contain numbers only'),
 
-    body('leads.*.contact.phone.number')
+    body('prospectuses.*.contact.phone.number')
         .optional({ nullable: true })
         .isLength({ min: 8, max: 15 })
         .withMessage('Phone number must be between 8 and 15 digits')
         .matches(/^\d+$/)
         .withMessage('Phone number must contain digits only'),
 
-    body('leads.*.contact.phone.extension')
+    body('prospectuses.*.contact.phone.extension')
         .optional({ nullable: true })
         .isLength({ max: 10 })
         .withMessage('Phone extension must be fewer than 10 characters')
         .matches(/^\d+$/)
         .withMessage('Phone extension must contain digits only'),
 
-    body('leads.*.contact.email')
+    body('prospectuses.*.contact.email')
         .optional({ nullable: true })
         .isEmail()
         .withMessage('Please provide a valid email address'),
 
-    body('leads.*.contact.department')
+    body('prospectuses.*.contact.department')
         .optional({ nullable: true })
         .isLength({ min: 2, max: 50 })
         .withMessage('Department must be between 2 and 50 characters'),
 
-    body('leads.*.contact.remarks')
+    body('prospectuses.*.contact.remarks')
         .optional({ nullable: true })
         .isLength({ min: 2, max: 255 })
         .withMessage('Remarks must be between 2 and 255 characters'),
 
-    body('leads.*.status')
+    body('prospectuses.*.status')
         .optional({ nullable: true })
         .isIn(PROSPECTUS_STATUSES)
         .withMessage('Invalid prospectus status. Allowed values: new, qualified'),
 
-    body('leads.*.source')
+    body('prospectuses.*.source')
         .optional({ nullable: true })
         .isLength({ min: 2, max: 50 })
         .withMessage('Source must be between 2 and 50 characters'),
 
-    body('leads.*.benificiary.name')
+    body('prospectuses.*.benificiary.name')
         .optional({ nullable: true })
         .isLength({ min: 2, max: 50 })
         .withMessage('Beneficiary name must be between 2 and 50 characters'),
 
-    body('leads.*.benificiary.phone.countryCode')
+    body('prospectuses.*.benificiary.phone.countryCode')
         .optional({ nullable: true })
         .isLength({ max: 5 })
         .withMessage('Beneficiary phone country code must be fewer than 5 characters')
         .matches(/^\+\d+$/)
         .withMessage('Beneficiary phone country code must start with + and contain numbers only'),
 
-    body('leads.*.benificiary.phone.number')
+    body('prospectuses.*.benificiary.phone.number')
         .optional({ nullable: true })
         .isLength({ min: 8, max: 15 })
         .withMessage('Beneficiary phone number must be between 8 and 15 digits')
         .matches(/^\d+$/)
         .withMessage('Beneficiary phone number must contain digits only'),
 
-    body('leads.*.benificiary.phone.extension')
+    body('prospectuses.*.benificiary.phone.extension')
         .optional({ nullable: true })
         .isLength({ max: 10 })
         .withMessage('Beneficiary phone extension must be fewer than 10 characters')
         .matches(/^\d+$/)
         .withMessage('Beneficiary phone extension must contain digits only'),
 
-    body('leads.*.followUp')
+    body('prospectuses.*.followUp')
         .optional({ nullable: true })
         .isISO8601()
         .withMessage('Follow up must be a valid date'),
 
-    body('leads.*.priority')
+    body('prospectuses.*.priority')
         .optional({ nullable: true })
         .isInt({ min: 0 })
         .withMessage('Priority must be a number greater than or equal to 0'),
@@ -289,68 +289,68 @@ const validateBulkCreateProspectusPayload = [
         .isEmail()
         .withMessage('Please provide a valid company email address'),
 
-    body('*.leads')
+    body('*.prospectuses')
         .optional({ nullable: true })
         .isArray()
-        .withMessage('Leads must be an array'),
+        .withMessage('Prospectuses must be an array'),
 
-    body('*.leads.*.contact.name')
+    body('*.prospectuses.*.contact.name')
         .optional({ nullable: true })
         .isLength({ min: 2, max: 50 })
         .withMessage('Contact name must be between 2 and 50 characters'),
 
-    body('*.leads.*.contact.phone.countryCode')
+    body('*.prospectuses.*.contact.phone.countryCode')
         .optional({ nullable: true })
         .isLength({ max: 5 })
         .withMessage('Phone country code must be fewer than 5 characters')
         .matches(/^\+\d+$/)
         .withMessage('Phone country code must start with + and contain numbers only'),
 
-    body('*.leads.*.contact.phone.number')
+    body('*.prospectuses.*.contact.phone.number')
         .optional({ nullable: true })
         .isLength({ min: 8, max: 15 })
         .withMessage('Phone number must be between 8 and 15 digits')
         .matches(/^\d+$/)
         .withMessage('Phone number must contain digits only'),
 
-    body('*.leads.*.contact.phone.extension')
+    body('*.prospectuses.*.contact.phone.extension')
         .optional({ nullable: true })
         .isLength({ max: 10 })
         .withMessage('Phone extension must be fewer than 10 characters')
         .matches(/^\d+$/)
         .withMessage('Phone extension must contain digits only'),
 
-    body('*.leads.*.contact.email')
+    body('*.prospectuses.*.contact.email')
         .optional({ nullable: true })
         .isEmail()
         .withMessage('Please provide a valid email address'),
 
-    body('*.leads.*.contact.department')
+    body('*.prospectuses.*.contact.department')
         .optional({ nullable: true })
         .isLength({ min: 2, max: 50 })
         .withMessage('Department must be between 2 and 50 characters'),
 
-    body('*.leads.*.contact.remarks')
+    body('*.prospectuses.*.contact.remarks')
         .optional({ nullable: true })
         .isLength({ min: 2, max: 255 })
         .withMessage('Remarks must be between 2 and 255 characters'),
 
-    body('*.leads.*.status')
+    body('*.prospectuses.*.status')
         .optional({ nullable: true })
         .isIn(PROSPECTUS_STATUSES)
         .withMessage('Invalid prospectus status. Allowed values: new, qualified'),
 
-    body('*.leads.*.source')
+    body('*.prospectuses.*.source')
         .optional({ nullable: true })
         .isLength({ min: 2, max: 50 })
         .withMessage('Source must be between 2 and 50 characters'),
 
-    body('*.leads.*.followUp')
+    body('*.prospectuses.*.followUp')
         .optional({ nullable: true })
         .isISO8601()
         .withMessage('Follow up must be a valid date'),
 
-    body('*.leads.*.priority')
+    body('*.prospectuses.*.priority')
         .optional({ nullable: true })
         .isInt({ min: 0 })
         .withMessage('Priority must be a number greater than or equal to 0'),

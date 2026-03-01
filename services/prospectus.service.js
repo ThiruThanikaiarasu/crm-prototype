@@ -15,7 +15,7 @@ const { getProspectusById, getAllProspectusWithPagination } = require('../reposi
 const escapeRegex = value => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
 const _createSingleProspectus = async (payload, tenantId, userId, session) => {
-    const { company, leads } = payload
+    const { company, prospectuses: leads } = payload
 
     const CompanyProspectus = companyProspectusModel(tenantId)
     const ContactProspectus = contactProspectusModel(tenantId)
@@ -297,7 +297,7 @@ const updateProspectusById = async (tenantId, id, payload, userId) => {
             throw new NotFoundError(404, 'Prospectus not found', ERROR_CODES.PROSPECTUS_NOT_FOUND, 'not_found')
         }
 
-        const { company, leads, name, email, phone, department, remarks, status, source, followUp, priority, benificiary } = payload
+        const { company, prospectuses: leads, name, email, phone, department, remarks, status, source, followUp, priority, benificiary } = payload
 
         // Update company prospectus
         if (company && Object.keys(company).length > 0) {
