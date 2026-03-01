@@ -648,6 +648,8 @@ const searchCompanyForPipeline = async (tenantId, search) => {
             }
         },
 
+        { $sort: { isArchived: 1 } },
+
         {
             $project: {
                 _id: 1,
