@@ -31,32 +31,30 @@ const createLead = async (payload, tenantId, userId) => {
         const escapeRegex = value =>
             value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
-        const companyQuery = {
-            'deleted.isDeleted': false,
-            $or: []
-        }
-
         if (company?.name) {
-            companyQuery.$or.push({
-                name: {
-                    $regex: `^${escapeRegex(company.name)}$`,
-                    $options: 'i'
-                }
+            const existingByName = await CompanyLead.findOne({
+                'deleted.isDeleted': false,
+                name: { $regex: `^${escapeRegex(company.name)}$`, $options: 'i' }
             })
+            if (existingByName) {
+                throw new ConflictError(
+                    409,
+                    'A company with this name already exists',
+                    ERROR_CODES.COMPANY_ALREADY_EXISTS,
+                    'conflict'
+                )
+            }
         }
 
         if (company?.phone?.number) {
-            companyQuery.$or.push({
+            const existingByPhone = await CompanyLead.findOne({
+                'deleted.isDeleted': false,
                 'phone.number': company.phone.number
             })
-        }
-
-        if (companyQuery.$or.length > 0) {
-            const existingCompany = await CompanyLead.findOne(companyQuery)
-            if (existingCompany) {
+            if (existingByPhone) {
                 throw new ConflictError(
                     409,
-                    'Company already exists',
+                    'A company with this phone number already exists',
                     ERROR_CODES.COMPANY_ALREADY_EXISTS,
                     'conflict'
                 )
@@ -83,26 +81,29 @@ const createLead = async (payload, tenantId, userId) => {
                 }
 
                 if (leadData?.contact?.email) {
-                    contactQuery.$or.push({
-                        email: {
-                            $regex: `^${escapeRegex(leadData.contact.email)}$`,
-                            $options: 'i'
-                        }
+                    const existingByEmail = await ContactLead.findOne({
+                        'deleted.isDeleted': false,
+                        email: { $regex: `^${escapeRegex(leadData.contact.email)}$`, $options: 'i' }
                     })
+                    if (existingByEmail) {
+                        throw new ConflictError(
+                            409,
+                            'A contact with this email already exists',
+                            ERROR_CODES.LEAD_ALREADY_EXISTS,
+                            'conflict'
+                        )
+                    }
                 }
 
                 if (leadData?.contact?.phone?.number) {
-                    contactQuery.$or.push({
+                    const existingByPhone = await ContactLead.findOne({
+                        'deleted.isDeleted': false,
                         'phone.number': leadData.contact.phone.number
                     })
-                }
-
-                if (contactQuery.$or.length > 0) {
-                    const existingContact = await ContactLead.findOne(contactQuery)
-                    if (existingContact) {
+                    if (existingByPhone) {
                         throw new ConflictError(
                             409,
-                            'Lead already exists',
+                            'A contact with this phone number already exists',
                             ERROR_CODES.LEAD_ALREADY_EXISTS,
                             'conflict'
                         )

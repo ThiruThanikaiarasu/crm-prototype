@@ -24,24 +24,30 @@ const _createSingleProspectus = async (payload, tenantId, userId, session) => {
 
     const user = await User.findById(userId).select('firstName lastName email')
 
-    const companyQuery = { 'deleted.isDeleted': false, $or: [] }
-
     if (company?.name) {
-        companyQuery.$or.push({
+        const existingByName = await CompanyProspectus.findOne({
+            'deleted.isDeleted': false,
             name: { $regex: `^${escapeRegex(company.name)}$`, $options: 'i' }
         })
+        if (existingByName) {
+            throw new ConflictError(
+                409,
+                'A company with this name already exists',
+                ERROR_CODES.PROSPECTUS_COMPANY_ALREADY_EXISTS,
+                'conflict'
+            )
+        }
     }
 
     if (company?.phone?.number) {
-        companyQuery.$or.push({ 'phone.number': company.phone.number })
-    }
-
-    if (companyQuery.$or.length > 0) {
-        const existingCompany = await CompanyProspectus.findOne(companyQuery)
-        if (existingCompany) {
+        const existingByPhone = await CompanyProspectus.findOne({
+            'deleted.isDeleted': false,
+            'phone.number': company.phone.number
+        })
+        if (existingByPhone) {
             throw new ConflictError(
                 409,
-                'Prospectus company already exists',
+                'A company with this phone number already exists',
                 ERROR_CODES.PROSPECTUS_COMPANY_ALREADY_EXISTS,
                 'conflict'
             )
@@ -55,24 +61,30 @@ const _createSingleProspectus = async (payload, tenantId, userId, session) => {
 
     if (leadsPayload.length > 0) {
         for (const leadData of leadsPayload) {
-            const contactQuery = { 'deleted.isDeleted': false, $or: [] }
-
             if (leadData?.email) {
-                contactQuery.$or.push({
+                const existingByEmail = await ContactProspectus.findOne({
+                    'deleted.isDeleted': false,
                     email: { $regex: `^${escapeRegex(leadData.email)}$`, $options: 'i' }
                 })
+                if (existingByEmail) {
+                    throw new ConflictError(
+                        409,
+                        'A contact with this email already exists',
+                        ERROR_CODES.PROSPECTUS_ALREADY_EXISTS,
+                        'conflict'
+                    )
+                }
             }
 
             if (leadData?.phone?.number) {
-                contactQuery.$or.push({ 'phone.number': leadData.phone.number })
-            }
-
-            if (contactQuery.$or.length > 0) {
-                const existingContact = await ContactProspectus.findOne(contactQuery)
-                if (existingContact) {
+                const existingByPhone = await ContactProspectus.findOne({
+                    'deleted.isDeleted': false,
+                    'phone.number': leadData.phone.number
+                })
+                if (existingByPhone) {
                     throw new ConflictError(
                         409,
-                        'Prospectus contact already exists',
+                        'A contact with this phone number already exists',
                         ERROR_CODES.PROSPECTUS_ALREADY_EXISTS,
                         'conflict'
                     )
