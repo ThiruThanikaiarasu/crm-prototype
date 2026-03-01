@@ -299,16 +299,32 @@ const getAllProspectusWithPagination = async (tenantId, filters = {}, userRole =
         pipeline.push({ $match: postLookupMatch })
     }
 
-    pipeline.push({
-        $group: {
-            _id: '$company._id',
-            companyDetails: { $first: '$company' },
-            matchedCount: { $sum: 1 },
-            maxCreatedAt: { $max: '$createdAt' },
-            companyNameLower: { $first: { $toLower: '$company.name' } },
-            contactFirstNameLower: { $first: { $toLower: '$contact.name' } }
+    pipeline.push(
+        {
+            $addFields: {
+                statusOrder: {
+                    $switch: {
+                        branches: [
+                            { case: { $eq: ['$status', 'new'] }, then: 0 },
+                            { case: { $eq: ['$status', 'qualified'] }, then: 1 }
+                        ],
+                        default: 2
+                    }
+                }
+            }
+        },
+        {
+            $group: {
+                _id: '$company._id',
+                companyDetails: { $first: '$company' },
+                matchedCount: { $sum: 1 },
+                maxCreatedAt: { $max: '$createdAt' },
+                companyNameLower: { $first: { $toLower: '$company.name' } },
+                contactFirstNameLower: { $first: { $toLower: '$contact.name' } },
+                minStatusOrder: { $min: '$statusOrder' }
+            }
         }
-    })
+    )
 
     let sortField = 'maxCreatedAt'
     if (sort === 'matchedCount') sortField = 'matchedCount'
@@ -370,10 +386,24 @@ const getAllProspectusWithPagination = async (tenantId, filters = {}, userRole =
     }
 
     nestedLookupPipeline.push(
-        { $sort: { createdAt: -1 } },
+        {
+            $addFields: {
+                statusOrder: {
+                    $switch: {
+                        branches: [
+                            { case: { $eq: ['$status', 'new'] }, then: 0 },
+                            { case: { $eq: ['$status', 'qualified'] }, then: 1 }
+                        ],
+                        default: 2
+                    }
+                }
+            }
+        },
+        { $sort: { statusOrder: 1, createdAt: -1 } },
         {
             $project: {
-                deleted: 0
+                deleted: 0,
+                statusOrder: 0
             }
         }
     )
@@ -381,7 +411,7 @@ const getAllProspectusWithPagination = async (tenantId, filters = {}, userRole =
     pipeline.push({
         $facet: {
             data: [
-                { $sort: { [sortField]: sortOrder } },
+                { $sort: { minStatusOrder: 1, [sortField]: sortOrder } },
                 { $skip: skip },
                 { $limit: Number(limit) },
                 {
