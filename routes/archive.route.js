@@ -1,5 +1,5 @@
 const express = require('express')
-const { getAllArchivedLeads, getArchivedLead, getAllArchivedCallLogs, getAllArchivedPipelines, getArchivedCallLog, getArchivedPipeline, getAllDroppedLeads, getDroppedLeadById } = require('../controllers/archive.controller')
+const { getAllArchivedLeads, getArchivedLead, getAllArchivedCallLogs, getAllArchivedPipelines, getArchivedCallLog, getArchivedPipeline, getAllDroppedLeads, getDroppedLeadById, getAllArchivedProspectuses } = require('../controllers/archive.controller')
 const { verifyUser, allowRoles } = require('../middlewares/auth.middleware')
 const ROLES = require('../constants/role.constant')
 const router = express.Router()
@@ -82,6 +82,16 @@ router.get(
     allowRoles(ROLES.SUPER_ADMIN),
 
     getDroppedLeadById
+)
+
+router.get(
+    '/prospectus',
+
+    verifyUser,
+
+    allowRoles(ROLES.SUPER_ADMIN),
+
+    getAllArchivedProspectuses
 )
 
 module.exports = router

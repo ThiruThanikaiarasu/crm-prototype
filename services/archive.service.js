@@ -4,6 +4,7 @@ const callLogModel = require('../models/callLog.model')
 const companyLeadModel = require('../models/companyLead.model')
 const contactLeadModel = require('../models/contactLead.model')
 const pipelineModel = require('../models/pipeline.model')
+const prospectusModel = require('../models/prospectus.model')
 // Import other models as needed (pipeline, calllog, etc.)
 
 const {
@@ -1363,6 +1364,234 @@ const getArchivedCallLogById = async (tenantId, id) => {
 }
 
 
+const getArchivedProspectuses = async (
+    tenantId,
+    {
+        page = 1,
+        limit = 10,
+        contact,
+        company,
+        status,
+        source,
+        sort = 'deleted.at',
+        order = 'desc',
+        deletedBy,
+        deletedFrom,
+        deletedTo,
+    } = {}
+) => {
+    const Prospectus = prospectusModel(tenantId)
+    const skip = (page - 1) * limit
+
+    const matchConditions = { 'deleted.isDeleted': true }
+
+    if (status) matchConditions.status = status
+    if (source) matchConditions.source = { $regex: new RegExp(source, 'i'), $ne: null }
+    if (deletedBy) matchConditions['deleted.by'] = new mongoose.Types.ObjectId(deletedBy)
+
+    if (deletedFrom || deletedTo) {
+        matchConditions['deleted.at'] = {}
+        if (deletedFrom) {
+            const startOfDay = new Date(deletedFrom)
+            startOfDay.setHours(0, 0, 0, 0)
+            matchConditions['deleted.at'].$gte = startOfDay
+        }
+        if (deletedTo) {
+            const endOfDay = new Date(deletedTo)
+            endOfDay.setHours(23, 59, 59, 999)
+            matchConditions['deleted.at'].$lte = endOfDay
+        }
+    }
+
+    const pipeline = [
+        { $match: matchConditions },
+        {
+            $lookup: {
+                from: `${tenantId}_companyprospectuses`,
+                let: { companyId: '$company' },
+                pipeline: [
+                    { $match: { $expr: { $eq: ['$_id', '$$companyId'] } } }
+                ],
+                as: 'company'
+            }
+        },
+        { $unwind: '$company' },
+        {
+            $lookup: {
+                from: `${tenantId}_contactprospectuses`,
+                let: { contactId: '$contact' },
+                pipeline: [
+                    { $match: { $expr: { $eq: ['$_id', '$$contactId'] } } }
+                ],
+                as: 'contact'
+            }
+        },
+        {
+            $unwind: {
+                path: '$contact',
+                preserveNullAndEmptyArrays: true
+            }
+        },
+        {
+            $lookup: {
+                from: `${tenantId}_users`,
+                let: { deletedById: '$deleted.by' },
+                pipeline: [
+                    { $match: { $expr: { $eq: ['$_id', '$$deletedById'] } } },
+                    { $project: { password: 0, deleted: 0 } }
+                ],
+                as: 'deletedByUser'
+            }
+        },
+        {
+            $unwind: {
+                path: '$deletedByUser',
+                preserveNullAndEmptyArrays: true
+            }
+        }
+    ]
+
+    const postLookupMatch = {}
+    if (company) postLookupMatch['company.name'] = { $regex: company, $options: 'i' }
+    if (contact) postLookupMatch['contact.name'] = { $regex: contact, $options: 'i' }
+    if (Object.keys(postLookupMatch).length > 0) {
+        pipeline.push({ $match: postLookupMatch })
+    }
+
+    pipeline.push({
+        $group: {
+            _id: '$company._id',
+            companyDetails: { $first: '$company' },
+            matchedCount: { $sum: 1 },
+            maxDeletedAt: { $max: '$deleted.at' },
+            maxCreatedAt: { $max: '$createdAt' }
+        }
+    })
+
+    let sortField
+    if (sort === 'deleted.at') sortField = 'maxDeletedAt'
+    else if (sort === 'createdAt') sortField = 'maxCreatedAt'
+    else sortField = 'matchedCount'
+
+    const sortOrder = order === 'asc' ? 1 : -1
+
+    pipeline.push({
+        $facet: {
+            data: [
+                { $sort: { [sortField]: sortOrder } },
+                { $skip: skip },
+                { $limit: Number(limit) },
+                {
+                    $lookup: {
+                        from: `${tenantId}_prospectuses`,
+                        let: { companyId: '$_id' },
+                        pipeline: [
+                            {
+                                $match: {
+                                    $expr: {
+                                        $and: [
+                                            { $eq: ['$company', '$$companyId'] },
+                                            { $eq: ['$deleted.isDeleted', true] }
+                                        ]
+                                    }
+                                }
+                            },
+                            {
+                                $lookup: {
+                                    from: `${tenantId}_contactprospectuses`,
+                                    let: { contactId: '$contact' },
+                                    pipeline: [
+                                        { $match: { $expr: { $eq: ['$_id', '$$contactId'] } } }
+                                    ],
+                                    as: 'contact'
+                                }
+                            },
+                            {
+                                $unwind: {
+                                    path: '$contact',
+                                    preserveNullAndEmptyArrays: true
+                                }
+                            },
+                            {
+                                $lookup: {
+                                    from: `${tenantId}_users`,
+                                    let: { deletedById: '$deleted.by' },
+                                    pipeline: [
+                                        { $match: { $expr: { $eq: ['$_id', '$$deletedById'] } } },
+                                        { $project: { _id: 1, firstName: 1, lastName: 1, email: 1, role: 1 } }
+                                    ],
+                                    as: 'deletedByUser'
+                                }
+                            },
+                            {
+                                $unwind: {
+                                    path: '$deletedByUser',
+                                    preserveNullAndEmptyArrays: true
+                                }
+                            },
+                            {
+                                $lookup: {
+                                    from: `${tenantId}_users`,
+                                    let: { createdById: '$createdBy' },
+                                    pipeline: [
+                                        { $match: { $expr: { $eq: ['$_id', '$$createdById'] } } },
+                                        { $project: { _id: 1, firstName: 1, lastName: 1, email: 1 } }
+                                    ],
+                                    as: 'createdBy'
+                                }
+                            },
+                            {
+                                $unwind: {
+                                    path: '$createdBy',
+                                    preserveNullAndEmptyArrays: true
+                                }
+                            },
+                            {
+                                $addFields: {
+                                    'deleted.by': '$deletedByUser'
+                                }
+                            },
+                            { $sort: { 'deleted.at': -1 } },
+                            {
+                                $project: {
+                                    deletedByUser: 0
+                                }
+                            }
+                        ],
+                        as: 'prospectuses'
+                    }
+                },
+                {
+                    $project: {
+                        _id: 0,
+                        company: '$companyDetails',
+                        prospectuses: 1
+                    }
+                }
+            ],
+            totalCount: [
+                { $count: 'count' }
+            ]
+        }
+    })
+
+    const result = await Prospectus.aggregate(pipeline)
+    const companies = result[0].data
+    const total = result[0].totalCount[0]?.count || 0
+    const totalPages = Math.ceil(total / limit)
+
+    return {
+        prospectuses: companies,
+        info: {
+            total,
+            page: parseInt(page),
+            limit: parseInt(limit),
+            totalPages,
+            hasMoreRecords: page < totalPages
+        }
+    }
+}
+
 module.exports = {
     getArchivedLeads,
     getArchivedLeadById,
@@ -1373,5 +1602,6 @@ module.exports = {
     getArchivedCallLogs,
     getArchivedCallLogById,
     getDroppedLeads,
-    getDroppedLeadById
+    getDroppedLeadById,
+    getArchivedProspectuses
 }

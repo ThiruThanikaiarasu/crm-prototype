@@ -8,7 +8,8 @@ const {
     getArchivedCallLogs,
     getArchivedCallLogById,
     getDroppedLeads,
-    getDroppedLeadById: getDroppedLeadByIdService
+    getDroppedLeadById: getDroppedLeadByIdService,
+    getArchivedProspectuses
 } = require('../services/archive.service')
 
 /**
@@ -384,6 +385,57 @@ const getDroppedLeadById = async (request, response) => {
     }
 }
 
+const getAllArchivedProspectuses = async (request, response) => {
+    try {
+        const { tenantId } = request.user
+        const {
+            page,
+            limit,
+            contact,
+            company,
+            status,
+            source,
+            sort,
+            order,
+            deletedBy,
+            deletedFrom,
+            deletedTo
+        } = request.query
+
+        const result = await getArchivedProspectuses(tenantId, {
+            page,
+            limit,
+            contact,
+            company,
+            status,
+            source,
+            sort,
+            order,
+            deletedBy,
+            deletedFrom,
+            deletedTo
+        })
+
+        return response.status(200).send(
+            setResponseBody(
+                'Archived prospectuses retrieved successfully',
+                null,
+                ERROR_CODES.SUCCESS,
+                result
+            )
+        )
+    } catch (error) {
+        return response.status(500).send(
+            setResponseBody(
+                error.message,
+                ERROR_CODES.SERVER_ERROR,
+                'server_error',
+                null
+            )
+        )
+    }
+}
+
 module.exports = {
     getAllArchivedLeads,
     getArchivedLead,
@@ -395,5 +447,7 @@ module.exports = {
     getArchivedCallLog,
 
     getAllDroppedLeads,
-    getDroppedLeadById
+    getDroppedLeadById,
+
+    getAllArchivedProspectuses
 }
