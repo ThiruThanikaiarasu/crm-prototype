@@ -4,6 +4,7 @@ const router = express.Router()
 const {
     createANewProspectus,
     bulkCreateProspectuses,
+    validateBulkProspectuses,
     getAll,
     getAProspectusById,
     updateAProspectusById,
@@ -27,6 +28,16 @@ router.post(
     validateCreateANewProspectusPayload,
 
     createANewProspectus,
+)
+
+router.post(
+    '/bulk/validate',
+
+    verifyUser,
+
+    validateBulkCreateProspectusPayload,
+
+    validateBulkProspectuses,
 )
 
 router.post(

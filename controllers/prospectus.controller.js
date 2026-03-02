@@ -4,6 +4,7 @@ const { ERROR_CODES } = require('../constants/error.constant')
 const {
     createProspectus,
     bulkCreateProspectus,
+    validateBulkProspectus,
     getAllProspectus,
     getAProspectusById,
     updateProspectusById,
@@ -53,6 +54,49 @@ const bulkCreateProspectuses = async (request, response) => {
 
         return response.status(201).send(
             setResponseBody('Prospectuses created successfully', ERROR_CODES.PROSPECTUS_CREATED, null, results)
+        )
+    } catch (error) {
+        return response.status(error.statusCode || 500).send(
+            setResponseBody(
+                error.message || 'Internal Server Error',
+                error.errorCode || ERROR_CODES.SERVER_ERROR,
+                error.errorType || 'server_error',
+                null
+            )
+        )
+    }
+}
+
+const validateBulkProspectuses = async (request, response) => {
+    try {
+        const errors = validationResult(request)
+        const formatErrorsByIndex = new Map()
+
+        if (!errors.isEmpty()) {
+            const allErrors = errors.array()
+
+            const topLevelError = allErrors.find(e => !/^\d+/.test(e.path))
+            if (topLevelError) {
+                return response.status(400).send(
+                    setResponseBody(topLevelError.msg, ERROR_CODES.VALIDATION_ERROR, 'validation_error', null)
+                )
+            }
+
+            for (const error of allErrors) {
+                const match = error.path.match(/^(\d+)/)
+                if (match) {
+                    const index = parseInt(match[1], 10)
+                    if (!formatErrorsByIndex.has(index)) formatErrorsByIndex.set(index, [])
+                    formatErrorsByIndex.get(index).push(error.msg)
+                }
+            }
+        }
+
+        const { tenantId } = request.user
+        const results = await validateBulkProspectus(request.body, tenantId, formatErrorsByIndex)
+
+        return response.status(200).send(
+            setResponseBody('Validation complete', null, ERROR_CODES.SUCCESS, results)
         )
     } catch (error) {
         return response.status(error.statusCode || 500).send(
@@ -242,6 +286,7 @@ const restoreAProspectusById = async (request, response) => {
 module.exports = {
     createANewProspectus,
     bulkCreateProspectuses,
+    validateBulkProspectuses,
     getAll,
     getAProspectusById: getAProspectusById_,
     updateAProspectusById,

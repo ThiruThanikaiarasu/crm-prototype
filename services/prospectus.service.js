@@ -92,26 +92,29 @@ const _createSingleProspectus = async (payload, tenantId, userId, session) => {
             }
         }
 
-        const contactsToInsert = leadsPayload.map(leadData => {
+        const contactDataPerLead = leadsPayload.map(leadData => {
             const { status, source, followUp, priority, benificiary, ...contactInfo } = leadData
-            return contactInfo
+            return Object.keys(contactInfo).length > 0 ? contactInfo : null
         })
 
-        const contactProspectuses = await ContactProspectus.insertMany(contactsToInsert, { session })
+        const contactsToInsert = contactDataPerLead.filter(Boolean)
+        const insertedContacts = contactsToInsert.length > 0
+            ? await ContactProspectus.insertMany(contactsToInsert, { session })
+            : []
 
-        const prospectusesToInsert = contactProspectuses.map((contactProspectus, index) => {
-            const originalLead = leadsPayload[index]
-            return {
-                company: companyProspectus._id,
-                contact: contactProspectus._id,
-                status: originalLead.status || 'new',
-                source: originalLead.source || null,
-                followUp: originalLead.followUp || null,
-                priority: originalLead.priority || 0,
-                benificiary: originalLead.benificiary || undefined,
-                createdBy: userId
-            }
-        })
+        let insertIdx = 0
+        const contactPerLead = contactDataPerLead.map(data => (data !== null ? insertedContacts[insertIdx++] : null))
+
+        const prospectusesToInsert = leadsPayload.map((leadData, index) => ({
+            company: companyProspectus._id,
+            contact: contactPerLead[index]?._id ?? null,
+            status: leadData.status || 'new',
+            source: leadData.source || null,
+            followUp: leadData.followUp || null,
+            priority: leadData.priority || 0,
+            benificiary: leadData.benificiary || undefined,
+            createdBy: userId
+        }))
 
         const insertedProspectuses = await Prospectus.create(prospectusesToInsert, { session, ordered: true })
 
@@ -119,11 +122,16 @@ const _createSingleProspectus = async (payload, tenantId, userId, session) => {
         delete companyObj.deleted
 
         const formattedProspectuses = insertedProspectuses.map((prospectus, index) => {
-            const { _id: contactId, deleted, createdAt: _cAt, updatedAt: _uAt, ...contactFields } = contactProspectuses[index].toObject()
+            const contact = contactPerLead[index]
+            let contactFormatted = null
+            if (contact) {
+                const { _id: contactId, deleted, createdAt: _cAt, updatedAt: _uAt, ...contactFields } = contact.toObject()
+                contactFormatted = Object.keys(contactFields).length > 0 ? { _id: contactId, ...contactFields } : null
+            }
             return {
                 _id: prospectus._id,
                 company: companyProspectus._id,
-                contact: Object.keys(contactFields).length > 0 ? { _id: contactId, ...contactFields } : null,
+                contact: contactFormatted,
                 status: prospectus.status,
                 source: prospectus.source,
                 followUp: prospectus.followUp,
@@ -599,9 +607,113 @@ const restoreProspectusById = async (tenantId, userId, id) => {
     }
 }
 
+const validateBulkProspectus = async (payloads, tenantId, formatErrorsByIndex) => {
+    const CompanyProspectus = companyProspectusModel(tenantId)
+    const ContactProspectus = contactProspectusModel(tenantId)
+
+    const results = []
+    const seenCompanyNames = new Map()
+    const seenCompanyPhones = new Map()
+    const seenContactEmails = new Map()
+    const seenContactPhones = new Map()
+
+    for (let i = 0; i < payloads.length; i++) {
+        const payload = payloads[i]
+        const errors = [...(formatErrorsByIndex.get(i) || [])]
+
+        if (!payload || typeof payload !== 'object') {
+            results.push({ index: i, status: 'invalid', errors })
+            continue
+        }
+
+        const { company, prospectuses: leads } = payload
+        const leadsPayload = Array.isArray(leads) ? leads : []
+
+        // Within-batch duplicate checks
+        if (company?.name) {
+            const key = company.name.trim().toLowerCase()
+            if (seenCompanyNames.has(key)) {
+                errors.push(`Company name is a duplicate of entry ${seenCompanyNames.get(key) + 1} in this upload`)
+            } else {
+                seenCompanyNames.set(key, i)
+            }
+        }
+
+        if (company?.phone?.number) {
+            const key = company.phone.number
+            if (seenCompanyPhones.has(key)) {
+                errors.push(`Company phone number is a duplicate of entry ${seenCompanyPhones.get(key) + 1} in this upload`)
+            } else {
+                seenCompanyPhones.set(key, i)
+            }
+        }
+
+        for (const leadData of leadsPayload) {
+            if (leadData?.email) {
+                const key = leadData.email.trim().toLowerCase()
+                if (seenContactEmails.has(key)) {
+                    errors.push(`Contact email is a duplicate of entry ${seenContactEmails.get(key) + 1} in this upload`)
+                } else {
+                    seenContactEmails.set(key, i)
+                }
+            }
+            if (leadData?.phone?.number) {
+                const key = leadData.phone.number
+                if (seenContactPhones.has(key)) {
+                    errors.push(`Contact phone number is a duplicate of entry ${seenContactPhones.get(key) + 1} in this upload`)
+                } else {
+                    seenContactPhones.set(key, i)
+                }
+            }
+        }
+
+        // DB conflict checks
+        if (company?.name) {
+            const existing = await CompanyProspectus.findOne({
+                'deleted.isDeleted': false,
+                name: { $regex: `^${escapeRegex(company.name)}$`, $options: 'i' }
+            })
+            if (existing) errors.push('A company with this name already exists in prospectuses')
+        }
+
+        if (company?.phone?.number) {
+            const existing = await CompanyProspectus.findOne({
+                'deleted.isDeleted': false,
+                'phone.number': company.phone.number
+            })
+            if (existing) errors.push('A company with this phone number already exists in prospectuses')
+        }
+
+        for (const leadData of leadsPayload) {
+            if (leadData?.email) {
+                const existing = await ContactProspectus.findOne({
+                    'deleted.isDeleted': false,
+                    email: { $regex: `^${escapeRegex(leadData.email)}$`, $options: 'i' }
+                })
+                if (existing) errors.push('A contact with this email already exists in prospectuses')
+            }
+            if (leadData?.phone?.number) {
+                const existing = await ContactProspectus.findOne({
+                    'deleted.isDeleted': false,
+                    'phone.number': leadData.phone.number
+                })
+                if (existing) errors.push('A contact with this phone number already exists in prospectuses')
+            }
+        }
+
+        results.push(errors.length === 0
+            ? { index: i, status: 'valid' }
+            : { index: i, status: 'invalid', errors }
+        )
+    }
+
+    return results
+}
+
 module.exports = {
     createProspectus,
     bulkCreateProspectus,
+    validateBulkProspectus,
     getAllProspectus,
     getAProspectusById,
     updateProspectusById,
