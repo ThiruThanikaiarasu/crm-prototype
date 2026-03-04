@@ -75,7 +75,9 @@ const validateBulkProspectuses = async (request, response) => {
         if (!errors.isEmpty()) {
             const allErrors = errors.array()
 
-            const topLevelError = allErrors.find(e => !/^\d+/.test(e.path))
+            // express-validator uses bracket notation for array items: [0].company.name
+            // A true top-level error (body not an array) has path ''
+            const topLevelError = allErrors.find(e => e.path === '' || !/^\[\d+\]/.test(e.path))
             if (topLevelError) {
                 return response.status(400).send(
                     setResponseBody(topLevelError.msg, ERROR_CODES.VALIDATION_ERROR, 'validation_error', null)
@@ -83,7 +85,7 @@ const validateBulkProspectuses = async (request, response) => {
             }
 
             for (const error of allErrors) {
-                const match = error.path.match(/^(\d+)/)
+                const match = error.path.match(/^\[(\d+)\]/)
                 if (match) {
                     const index = parseInt(match[1], 10)
                     if (!formatErrorsByIndex.has(index)) formatErrorsByIndex.set(index, [])
