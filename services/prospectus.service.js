@@ -649,16 +649,16 @@ const validateBulkProspectus = async (payloads, tenantId, formatErrorsByIndex) =
         }
 
         for (const leadData of leadsPayload) {
-            if (leadData?.contact?.email) {
-                const key = leadData.contact.email.trim().toLowerCase()
+            if (leadData?.email) {
+                const key = leadData.email.trim().toLowerCase()
                 if (seenContactEmails.has(key)) {
                     errors.push(`Contact email is a duplicate of entry ${seenContactEmails.get(key) + 1} in this upload`)
                 } else {
                     seenContactEmails.set(key, i)
                 }
             }
-            if (leadData?.contact?.phone?.number) {
-                const key = leadData.contact.phone.number
+            if (leadData?.phone?.number) {
+                const key = leadData.phone.number
                 if (seenContactPhones.has(key)) {
                     errors.push(`Contact phone number is a duplicate of entry ${seenContactPhones.get(key) + 1} in this upload`)
                 } else {
@@ -685,17 +685,17 @@ const validateBulkProspectus = async (payloads, tenantId, formatErrorsByIndex) =
         }
 
         for (const leadData of leadsPayload) {
-            if (leadData?.contact?.email) {
+            if (leadData?.email) {
                 const existing = await ContactProspectus.findOne({
                     'deleted.isDeleted': false,
-                    email: { $regex: `^${escapeRegex(leadData.contact.email)}$`, $options: 'i' }
+                    email: { $regex: `^${escapeRegex(leadData.email)}$`, $options: 'i' }
                 })
                 if (existing) errors.push('A contact with this email already exists in prospectuses')
             }
-            if (leadData?.contact?.phone?.number) {
+            if (leadData?.phone?.number) {
                 const existing = await ContactProspectus.findOne({
                     'deleted.isDeleted': false,
-                    'phone.number': leadData.contact.phone.number
+                    'phone.number': leadData.phone.number
                 })
                 if (existing) errors.push('A contact with this phone number already exists in prospectuses')
             }
