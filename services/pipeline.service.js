@@ -628,6 +628,26 @@ const searchCompanyForPipeline = async (tenantId, search) => {
             }
         },
 
+        /* ---- Exclude companies already active (non-archived) in a pipeline ---- */
+        {
+            $match: {
+                $expr: {
+                    $eq: [
+                        {
+                            $size: {
+                                $filter: {
+                                    input: '$pipelines',
+                                    as: 'p',
+                                    cond: { $eq: ['$$p.deleted.isDeleted', false] }
+                                }
+                            }
+                        },
+                        0
+                    ]
+                }
+            }
+        },
+
         /* -------------------- Add isArchived flag -------------------- */
         {
             $addFields: {

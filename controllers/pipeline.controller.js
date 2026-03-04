@@ -288,7 +288,8 @@ const searchCompanyForPipelineHandler = async (request, response) => {
     try {
         const { tenantId } = request.user
 
-        const leads = await searchCompanyForPipeline(tenantId)
+        const { search } = request.query
+        const leads = await searchCompanyForPipeline(tenantId, search)
 
         return response.status(200).send(
             setResponseBody(
