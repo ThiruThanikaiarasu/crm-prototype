@@ -114,6 +114,114 @@
 
 /**
  * @swagger
+ * /archive/leads/{id}:
+ *   get:
+ *     summary: Get archived lead by ID
+ *     description: |
+ *       Retrieve a single soft-deleted lead by its ID.
+ *       **Canonical path**: `/api/v1/archive/leads/{id}`
+ *       This endpoint is accessible **only to Super Admin users**.
+ *     tags: [Archive]
+ *     security:
+ *       - bearerAuth: []
+ *
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           pattern: "^[0-9a-fA-F]{24}$"
+ *         description: MongoDB ObjectId of the archived lead
+ *
+ *     responses:
+ *       200:
+ *         description: Archived lead retrieved successfully
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: "Archived lead retrieved successfully"
+ *               errorCode: null
+ *               error: "0000"
+ *               data:
+ *                 _id: "695012cde2389e938f922ea0"
+ *                 company: "695012cce2389e938f922e9c"
+ *                 status: "new"
+ *                 source: null
+ *                 followUp: null
+ *                 deleted:
+ *                   isDeleted: true
+ *                   at: "2025-12-27T17:21:08.245Z"
+ *                   by:
+ *                     _id: "69217fc1d26c2d434bee1ae4"
+ *                     firstName: "Thiru"
+ *                     lastName: "T"
+ *                     email: "thiru9@gmail.com"
+ *                     role: "super_admin"
+ *                 createdAt: "2025-12-27T17:09:33.244Z"
+ *                 updatedAt: "2025-12-27T17:21:08.245Z"
+ *
+ *       400:
+ *         description: Bad Request — invalid ObjectId format
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: "Invalid lead id"
+ *               errorCode: "1001"
+ *               error: "validation_error"
+ *               data: null
+ *
+ *       404:
+ *         description: Archived lead not found
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: "Archived lead not found"
+ *               errorCode: "4201"
+ *               error: "not_found"
+ *               data: null
+ *
+ *       403:
+ *         description: Forbidden — only Super Admin can access archived leads
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: "You don't have access to this resource"
+ *               errorCode: "3001"
+ *               error: "authorization_error"
+ *               data: null
+ *
+ *       401:
+ *         description: Unauthorized — token missing, expired, or invalid
+ *         content:
+ *           application/json:
+ *             examples:
+ *               TokenExpired:
+ *                 value:
+ *                   message: "Session Expired"
+ *                   errorCode: "2003"
+ *                   error: "token_expired"
+ *                   data: null
+ *               AuthenticationError:
+ *                 value:
+ *                   message: "Session Expired"
+ *                   errorCode: "2010"
+ *                   error: "authentication_error"
+ *                   data: null
+ *
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: "Internal Server Error"
+ *               errorCode: "5001"
+ *               error: "server_error"
+ *               data: null
+ */
+
+/**
+ * @swagger
  * /archive/call-logs:
  *   get:
  *     summary: Get all archived call logs

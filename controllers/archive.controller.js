@@ -1,3 +1,4 @@
+const { validationResult } = require('express-validator')
 const { setResponseBody } = require('../utils/responseFormatter.util')
 const { ERROR_CODES } = require('../constants/error.constant')
 const {
@@ -71,6 +72,20 @@ const getAllArchivedLeads = async (request, response) => {
  */
 const getArchivedLead = async (request, response) => {
     try {
+        const errors = validationResult(request)
+        if (!errors.isEmpty()) {
+            return response
+                .status(400)
+                .send(
+                    setResponseBody(
+                        errors.array()[0].msg,
+                        ERROR_CODES.VALIDATION_ERROR,
+                        'validation_error',
+                        null
+                    )
+                )
+        }
+
         const { tenantId } = request.user
         const { id } = request.params
 

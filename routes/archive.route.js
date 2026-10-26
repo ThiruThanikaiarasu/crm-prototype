@@ -1,6 +1,7 @@
 const express = require('express')
 const { getAllArchivedLeads, getArchivedLead, getAllArchivedCallLogs, getAllArchivedPipelines, getArchivedCallLog, getArchivedPipeline, getAllDroppedLeads, getDroppedLeadById, getAllArchivedProspectuses } = require('../controllers/archive.controller')
 const { verifyUser, allowRoles } = require('../middlewares/auth.middleware')
+const { validateObjectIdParam } = require('../validators/common.validator')
 const ROLES = require('../constants/role.constant')
 const router = express.Router()
 
@@ -15,11 +16,13 @@ router.get(
 )
 
 router.get(
-    '/leads:id',
+    '/leads/:id',
 
     verifyUser,
 
     allowRoles(ROLES.SUPER_ADMIN),
+
+    validateObjectIdParam('id'),
 
     getArchivedLead
 )

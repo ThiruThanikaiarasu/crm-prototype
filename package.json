@@ -5,7 +5,7 @@
     "main": "index.js",
     "scripts": {
         "start": "nodemon server.js",
-        "test": "echo \"Error: no test specified\" && exit 1",
+        "test": "jest",
         "format": "prettier --write \"**/*.{js,jsx,json,md}\"",
         "format:check": "prettier --check \"**/*.{js,jsx,json,md}\""
     },
@@ -34,6 +34,7 @@
     "devDependencies": {
         "dotenv": "^17.2.3",
         "jest": "^30.2.0",
-        "nodemon": "^3.1.11"
+        "nodemon": "^3.1.11",
+        "supertest": "^7.3.1"
     }
 }
